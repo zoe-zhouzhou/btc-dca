@@ -15,7 +15,7 @@ import { homedir } from 'os';
 import { join } from 'path';
 
 const CONFIG_DIR = join(homedir(), '.btc-dca');
-const FEED_URL_DEFAULT = 'https://btc-dca.github.io/signals-feed.json';
+const FEED_URL_DEFAULT = 'https://zoe-zhouzhou.github.io/btc-dca/signals-feed.json';
 
 async function readConfig() {
   try {
