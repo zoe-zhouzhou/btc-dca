@@ -20,7 +20,7 @@
 | Web 前端 | 纯静态 HTML/CSS/JS，无框架，Chart.js 可视化 |
 | 后端 | **无**（导入码为本地 base64url 编码，无需服务器） |
 | 部署 | 前端 GitHub Pages（完全静态） |
-| 信号 Feed | GitHub Actions 每日拉取 → `public/signals-feed.json` |
+| 信号 Feed | GitHub Actions 每日拉取 → `docs/signals-feed.json` |
 
 ---
 
@@ -30,7 +30,7 @@
 BTCDCA/
 ├── CLAUDE.md                        # 本文件
 ├── BTC智能定投产品文档_v1.1.md        # 完整产品文档
-├── public/                          # 前端静态文件
+├── docs/                          # 前端静态文件
 │   ├── index.html                   # 入口页（周期看板）
 │   ├── questionnaire.html           # 问卷页
 │   ├── persona.html                 # 画像展示页
@@ -272,7 +272,7 @@ BTCDCA/
 ### Session 8 完成情况（2026-06-06）
 
 **新增文件：**
-- `scripts/fetch-signals.js`：GitHub Actions 每日数据采集脚本，拉取 Glassnode / FGI / Binance / ETF 数据，支持降级模式，写入 `public/signals-feed.json`
+- `scripts/fetch-signals.js`：GitHub Actions 每日数据采集脚本，拉取 Glassnode / FGI / Binance / ETF 数据，支持降级模式，写入 `docs/signals-feed.json`
 - `.github/workflows/fetch-signals.yml`：每日 UTC 00:00（北京 08:00）触发，支持 `workflow_dispatch` 手动触发，有变更才 commit
 
 **Bug 修复：**

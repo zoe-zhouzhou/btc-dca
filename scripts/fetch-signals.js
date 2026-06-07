@@ -2,7 +2,7 @@
 /**
  * fetch-signals.js — GitHub Actions 每日数据采集脚本
  *
- * 拉取以下数据后生成 public/signals-feed.json：
+ * 拉取以下数据后生成 docs/signals-feed.json：
  *   - Glassnode：MVRV-Z、Puell Multiple、NUPL、交易所储备趋势
  *   - alternative.me：恐慌贪婪指数
  *   - Binance API：资金费率（Bybit 备用）、当前价格
@@ -17,7 +17,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const OUTPUT    = join(__dirname, '../public/signals-feed.json');
+const OUTPUT    = join(__dirname, '../docs/signals-feed.json');
 
 // ── 减半日期（UTC）── 2024-04-19 为最近一次
 const HALVING_DATE = new Date('2024-04-19T00:00:00Z');
