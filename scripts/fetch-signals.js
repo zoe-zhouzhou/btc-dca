@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 /**
- * fetch-signals.js — GitHub Actions 每日数据采集脚本
+ * fetch-signals.js — GitHub Actions 每日数据采集脚本（全免费数据源）
  *
- * 拉取以下数据后生成 docs/signals-feed.json：
- *   - Glassnode：MVRV-Z、Puell Multiple、NUPL、交易所储备趋势
- *   - alternative.me：恐慌贪婪指数
- *   - Binance API：资金费率（Bybit 备用）、当前价格
- *   - 本地计算：减半周期位置
- *   - CryptoQuant（可选）：ETF 资金流向
+ * 数据来源（均免费，无需 API Key）：
+ *   CoinMetrics Community API — MVRV ratio（归一化为 MVRV-Z 近似值）
+ *   alternative.me           — 恐慌贪婪指数
+ *   Binance / Bybit API      — 现价 + 资金费率
+ *   本地计算                  — 减半周期位置
  *
- * 降级策略：Glassnode 不可用时 → degraded:true，改用 FGI+资金费率+减半周期降级兜底。
+ * 更新策略：
+ *   - MVRV / FGI / 资金费率 / 现价：每日自动更新
+ *   - Puell Multiple / NUPL / 交易所储备：无免费 API，保留上次已知值（变化缓慢，可接受）
+ *   - ETF 流向：用 FGI + 价格动量估算
+ *
+ * 降级策略：CoinMetrics 不可用时 → degraded:true，仅 FGI + 资金费率 + 减半周期参与计分。
  */
 
 import { writeFile, readFile } from 'fs/promises';
@@ -19,140 +23,107 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUTPUT    = join(__dirname, '../docs/signals-feed.json');
 
-// ── 减半日期（UTC）── 2024-04-19 为最近一次
+// ── 减半日期 ──────────────────────────────────────────────────────────────
 const HALVING_DATE = new Date('2024-04-19T00:00:00Z');
-const NEXT_HALVING = new Date('2028-04-20T00:00:00Z');
 
-// ── 归一化区间（同 signals.js 逻辑） ─────────────────────────────────────
+// ── 归一化工具（0=低估，100=高估）─────────────────────────────────────────
+function clamp01(v, lo, hi) { return Math.max(0, Math.min(1, (v - lo) / (hi - lo))); }
 
-/**
- * clamp 到 [0, 100]，线性插值
- * direction: 'lower_better'（值越低分越低）或 'higher_better'（值越高分越低）
- */
-function normalize(value, min, max, direction = 'lower_better') {
-  const clamped = Math.max(min, Math.min(max, value));
-  const raw = (clamped - min) / (max - min); // 0=min, 1=max
-  return Math.round(direction === 'lower_better' ? raw * 100 : (1 - raw) * 100);
-}
-
-// MVRV-Z: 历史范围约 [-1, 10]，越低越便宜
-function normalizeMvrvZ(v)       { return normalize(v, -1, 8, 'lower_better'); }
-// Puell Multiple: 历史范围约 [0.3, 5]，越低越便宜
-function normalizePuell(v)       { return normalize(v, 0.3, 4, 'lower_better'); }
-// NUPL: [-0.3, 0.8]，越低越便宜
-function normalizeNupl(v)        { return normalize(v, -0.3, 0.75, 'lower_better'); }
-// 交易所储备趋势：decreasing(好) / stable / increasing(差) → 映射到 [0, 100]
+// MVRV ratio 历史范围：~0.5（极端底部）到 ~8（极端顶部）
+function normalizeMvrv(v)   { return Math.round(clamp01(v, 0.5, 8)    * 100); }
+// Puell Multiple：~0.3（底部）到 ~4（顶部）
+function normalizePuell(v)  { return Math.round(clamp01(v, 0.3, 4)    * 100); }
+// NUPL：-0.3（底部）到 +0.75（顶部）
+function normalizeNupl(v)   { return Math.round(clamp01(v, -0.3, 0.75)* 100); }
+// 交易所储备趋势
 function normalizeReserves(trend) {
-  if (trend === 'decreasing') return 18;
-  if (trend === 'stable')     return 45;
-  return 72;
+  return trend === 'decreasing' ? 18 : trend === 'stable' ? 45 : 72;
 }
-// FGI: [0, 100]，越低越恐慌（分越低）
-function normalizeFGI(v)         { return normalize(v, 0, 100, 'lower_better'); }
-// 资金费率：[-0.1, 0.1]，越负越便宜
-function normalizeFunding(v)     { return normalize(v, -0.1, 0.1, 'lower_better'); }
-// 减半周期：0个月（刚减半）到 48个月（接近下次减半），0-18个月为最优窗口
-function normalizeHalvingCycle(monthsSince) {
-  // 0-18 月是底部/积累期，对应低分区
-  return normalize(monthsSince, 0, 48, 'lower_better');
-}
-// ETF 7d 平均净流向（百万美元）：-500 到 +500，流出越多越便宜
-function normalizeEtfFlow(m)     { return normalize(m, -500, 500, 'lower_better'); }
+// FGI：0（极恐）到 100（极贪）
+function normalizeFGI(v)    { return Math.round(clamp01(v, 0, 100)    * 100); }
+// 资金费率：-0.1%（做空，底部）到 +0.1%（做多，顶部）
+function normalizeFunding(v){ return Math.round(clamp01(v, -0.001, 0.001) * 100); }
+// 减半周期：0–48 个月，0–18 个月为底部积累窗口
+function normalizeHalving(m){ return Math.round(clamp01(m, 0, 48)     * 100); }
+// ETF 7日均流向：-500M（流出）到 +500M（流入）
+function normalizeEtfFlow(m){ return Math.round(clamp01(m, -500, 500) * 100); }
 
-// ── 周期分数加权计算 ───────────────────────────────────────────────────────
-function computeCycleScore(scores) {
-  const {
-    mvrv_z, puell_multiple, nupl, exchange_reserves,
-    fgi, funding_rate, halving_cycle, etf_flow,
-  } = scores;
+function computeCycleScore(s) {
   return Math.round(
-    mvrv_z           * 0.25 +
-    puell_multiple   * 0.20 +
-    nupl             * 0.15 +
-    exchange_reserves * 0.10 +
-    fgi              * 0.15 +
-    funding_rate     * 0.05 +
-    halving_cycle    * 0.05 +
-    etf_flow         * 0.05,
+    s.mvrv_z            * 0.25 +
+    s.puell_multiple    * 0.20 +
+    s.nupl              * 0.15 +
+    s.exchange_reserves * 0.10 +
+    s.fgi               * 0.15 +
+    s.funding_rate      * 0.05 +
+    s.halving_cycle     * 0.05 +
+    s.etf_flow          * 0.05,
   );
 }
 
-// ── Glassnode 数据拉取 ──────────────────────────────────────────────────────
-async function fetchGlassnode() {
-  const apiKey = process.env.GLASSNODE_API_KEY;
-  if (!apiKey) throw new Error('GLASSNODE_API_KEY not set');
+// ── CoinMetrics Community API（免费，无需 Key）────────────────────────────
+// 返回 MVRV ratio（注：此为 MVRV ratio，非 MVRV-Z score；已通过历史区间归一化为近似值）
+async function fetchMVRV() {
+  const url = 'https://community-api.coinmetrics.io/v4/timeseries/asset-metrics'
+    + '?assets=btc&metrics=CapMVRVCur,PriceUSD&limit_per_asset=100';
 
-  const base = 'https://api.glassnode.com/v1/metrics';
-  const common = `&a=BTC&i=24h&api_key=${apiKey}`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'btc-dca-signals/1.0' },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`CoinMetrics HTTP ${res.status}`);
+  const json = await res.json();
 
-  async function get(path) {
-    const url = `${base}${path}?${common.slice(1)}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    if (!res.ok) throw new Error(`Glassnode ${path} HTTP ${res.status}`);
-    const arr = await res.json();
-    if (!arr?.length) throw new Error(`Glassnode ${path} empty`);
-    return arr[arr.length - 1].v; // 最新值
-  }
+  const rows = json?.data ?? [];
+  if (!rows.length) throw new Error('CoinMetrics: empty response');
 
-  const [mvrvZ, puell, nupl, exchangeReserves] = await Promise.all([
-    get('/market/mvrv_z_score'),
-    get('/mining/puell_multiple'),
-    get('/indicators/nupl'),
-    get('/distribution/balance_exchanges'),
-  ]);
+  const latest = rows[rows.length - 1];
+  const mvrv   = parseFloat(latest.CapMVRVCur);
+  if (isNaN(mvrv)) throw new Error('CoinMetrics: invalid MVRV value');
 
-  // 交易所储备趋势：与前7日均值比较
-  const reserveHistRes = await fetch(
-    `${base}/distribution/balance_exchanges?a=BTC&i=24h&api_key=${apiKey}&limit=8`,
-    { signal: AbortSignal.timeout(15000) }
-  );
-  let reserveTrend = 'stable';
-  if (reserveHistRes.ok) {
-    const hist = await reserveHistRes.json();
-    if (hist?.length >= 2) {
-      const latest = hist[hist.length - 1].v;
-      const avg7d  = hist.slice(-8, -1).reduce((s, x) => s + x.v, 0) / 7;
-      if (latest < avg7d * 0.998) reserveTrend = 'decreasing';
-      else if (latest > avg7d * 1.002) reserveTrend = 'increasing';
-    }
-  }
+  // 7日前价格（用于 ETF 流向估算）
+  const price7dAgo = rows.length >= 8
+    ? parseFloat(rows[rows.length - 8]?.PriceUSD ?? '0')
+    : null;
 
-  return { mvrvZ, puell, nupl, exchangeReserves, reserveTrend };
+  return { mvrv, price7dAgo };
 }
 
-// ── FGI 拉取 ──────────────────────────────────────────────────────────────
+// ── 恐慌贪婪指数 ───────────────────────────────────────────────────────────
 async function fetchFGI() {
-  const res = await fetch('https://api.alternative.me/fng/?limit=1', { signal: AbortSignal.timeout(10000) });
+  const res = await fetch('https://api.alternative.me/fng/?limit=1', {
+    headers: { 'User-Agent': 'btc-dca-signals/1.0' },
+    signal: AbortSignal.timeout(10000),
+  });
   if (!res.ok) throw new Error(`FGI HTTP ${res.status}`);
   const data = await res.json();
   const entry = data.data[0];
   return { value: parseInt(entry.value, 10), label: entry.value_classification };
 }
 
-// ── Binance 资金费率 + 现价 ────────────────────────────────────────────────
+// ── Binance：现价 + 资金费率（Bybit 备用）──────────────────────────────────
 async function fetchBinance() {
+  const headers = { 'User-Agent': 'btc-dca-signals/1.0' };
   const [priceRes, fundingRes] = await Promise.allSettled([
-    fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT', { signal: AbortSignal.timeout(10000) }),
-    fetch('https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=1', { signal: AbortSignal.timeout(10000) }),
+    fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT', { headers, signal: AbortSignal.timeout(10000) }),
+    fetch('https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=1', { headers, signal: AbortSignal.timeout(10000) }),
   ]);
 
   let currentPrice = null, fundingRate = null;
 
   if (priceRes.status === 'fulfilled' && priceRes.value.ok) {
-    const d = await priceRes.value.json();
-    currentPrice = parseFloat(d.price);
+    currentPrice = parseFloat((await priceRes.value.json()).price);
   }
   if (fundingRes.status === 'fulfilled' && fundingRes.value.ok) {
-    const d = await fundingRes.value.json();
-    if (d?.[0]?.fundingRate != null) {
-      fundingRate = parseFloat(d[0].fundingRate);
-    }
+    const arr = await fundingRes.value.json();
+    if (arr?.[0]?.fundingRate != null) fundingRate = parseFloat(arr[0].fundingRate);
   }
 
   // Bybit 备用（资金费率）
   if (fundingRate === null) {
     try {
-      const r = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT', { signal: AbortSignal.timeout(10000) });
+      const r = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT',
+        { headers, signal: AbortSignal.timeout(10000) });
       if (r.ok) {
         const d = await r.json();
         fundingRate = parseFloat(d.result.list[0].fundingRate);
@@ -163,131 +134,102 @@ async function fetchBinance() {
   return { currentPrice, fundingRate };
 }
 
-// ── ETF 资金流（可选，从 CryptoQuant 或硬编码估算）─────────────────────────
-async function fetchEtfFlow() {
-  // 暂用 FGI 与资金费率联合估算 — 有 CryptoQuant API Key 时替换此逻辑
-  // 返回 7 日均值（百万美元）；null 时 ETF 数据缺失，用 0 填充
-  const apiKey = process.env.CRYPTOQUANT_API_KEY;
-  if (!apiKey) return null;
-
-  try {
-    const res = await fetch(
-      'https://api.cryptoquant.com/v1/btc/exchange-flows/inflow?exchange=bitcoin_etf&window=day&limit=7',
-      { headers: { Authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(15000) }
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const rows = data?.result?.data ?? [];
-    if (!rows.length) return null;
-    const avg = rows.reduce((s, r) => s + (r.inflow_usd_million ?? 0), 0) / rows.length;
-    return Math.round(avg);
-  } catch {
-    return null;
-  }
+// ── ETF 流向近似（FGI + 价格动量估算，无免费 API）───────────────────────────
+function estimateEtfFlow(fgiVal, priceNow, price7dAgo) {
+  if (!priceNow || !price7dAgo || price7dAgo === 0) return 0;
+  const priceChg  = (priceNow - price7dAgo) / price7dAgo;
+  const sentiment = (fgiVal - 50) / 50;              // -1 ~ +1
+  return Math.round((priceChg * 0.6 + sentiment * 0.4) * 300); // 映射到 ±300M 估算
 }
 
-// ── 减半周期 ──────────────────────────────────────────────────────────────
+// ── 减半周期 ───────────────────────────────────────────────────────────────
 function halvingCycleData() {
-  const now = Date.now();
-  const monthsSince = (now - HALVING_DATE.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
-  return {
-    months_since_halving: Math.round(monthsSince),
-    normalized_score: normalizeHalvingCycle(monthsSince),
-  };
+  const monthsSince = (Date.now() - HALVING_DATE.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+  return { months_since_halving: Math.round(monthsSince), normalized_score: normalizeHalving(monthsSince) };
 }
 
-// ── 旧 signals-feed.json 读取（降级时保留部分字段）─────────────────────────
-async function readExistingFeed() {
-  try {
-    return JSON.parse(await readFile(OUTPUT, 'utf8'));
-  } catch {
-    return null;
-  }
+// ── 读取旧文件（保留 Puell / NUPL / 交易所储备等慢变量）────────────────────
+async function readExisting() {
+  try { return JSON.parse(await readFile(OUTPUT, 'utf8')); } catch { return null; }
 }
 
 // ── 主流程 ────────────────────────────────────────────────────────────────
 async function main() {
   const today    = new Date().toISOString().slice(0, 10);
-  const existing = await readExistingFeed();
+  const existing = await readExisting();
   const halving  = halvingCycleData();
 
-  // 并行拉取各数据源
-  const [glassnodeResult, fgiResult, binanceResult, etfFlowResult] = await Promise.allSettled([
-    fetchGlassnode(),
+  const [mvrvResult, fgiResult, binanceResult] = await Promise.allSettled([
+    fetchMVRV(),
     fetchFGI(),
     fetchBinance(),
-    fetchEtfFlow(),
   ]);
 
-  const glassnode = glassnodeResult.status === 'fulfilled' ? glassnodeResult.value : null;
-  const fgi       = fgiResult.status       === 'fulfilled' ? fgiResult.value       : null;
-  const binance   = binanceResult.status   === 'fulfilled' ? binanceResult.value   : null;
-  const etfFlow   = etfFlowResult.status   === 'fulfilled' ? etfFlowResult.value   : null;
+  const mvrvData = mvrvResult.status    === 'fulfilled' ? mvrvResult.value    : null;
+  const fgi      = fgiResult.status     === 'fulfilled' ? fgiResult.value     : null;
+  const binance  = binanceResult.status === 'fulfilled' ? binanceResult.value : null;
 
-  const degraded = glassnode === null;
+  const degraded = mvrvData === null;
   let degradedReason = null;
   if (degraded) {
-    const err = glassnodeResult.reason?.message ?? 'unknown';
-    degradedReason = `Glassnode 不可用（${err}），使用降级数据源`;
-    console.warn('[fetch-signals] Glassnode degraded:', err);
+    const err = mvrvResult.reason?.message ?? 'unknown';
+    degradedReason = `CoinMetrics 不可用（${err}），使用降级数据源`;
+    console.warn('[fetch-signals] MVRV degraded:', err);
   }
 
-  // 资金费率
-  const fundingRateVal = binance?.fundingRate ?? (existing?.funding_rate?.value ?? 0);
-  const fundingTrend   = fundingRateVal < -0.005 ? 'negative' : fundingRateVal > 0.005 ? 'positive' : 'neutral';
+  // 实时可得
+  const mvrvVal  = mvrvData?.mvrv  ?? existing?.mvrv_z?.value         ?? 1.0;
+  const fgiVal   = fgi?.value      ?? existing?.fgi?.value            ?? 50;
+  const fgiLabel = fgi?.label      ?? existing?.fgi?.label            ?? 'Neutral';
+  const fundingVal = binance?.fundingRate ?? existing?.funding_rate?.value ?? 0;
+  const fundingTrend = fundingVal < -0.0001 ? 'negative' : fundingVal > 0.0001 ? 'positive' : 'neutral';
+  const priceNow = binance?.currentPrice ?? existing?.current_price ?? null;
 
-  // FGI — 回退到旧数据
-  const fgiVal   = fgi?.value ?? existing?.fgi?.value   ?? 50;
-  const fgiLabel = fgi?.label ?? existing?.fgi?.label   ?? 'Neutral';
+  // 慢变指标：保留上次已知值（Puell / NUPL / 交易所储备每周手动更新或后续接入数据源时替换）
+  const puellVal = existing?.puell_multiple?.value  ?? 1.0;
+  const nuplVal  = existing?.nupl?.value            ?? 0.0;
+  const resTrend = existing?.exchange_reserves?.trend ?? 'stable';
 
-  // ETF 流向：有 API 就用，否则复用旧数据，再否则 0
-  const etfAvg = etfFlow ?? existing?.etf_flow?.['7d_avg_usd_m'] ?? 0;
+  // ETF 流向估算
+  const price7dAgo = mvrvData?.price7dAgo ?? existing?.current_price ?? null;
+  const etfAvg     = estimateEtfFlow(fgiVal, priceNow, price7dAgo);
 
-  // 主指标（降级时复用旧值）
-  const mvrzVal  = glassnode?.mvrvZ  ?? existing?.mvrv_z?.value         ?? 0.5;
-  const puellVal = glassnode?.puell  ?? existing?.puell_multiple?.value  ?? 1;
-  const nuplVal  = glassnode?.nupl   ?? existing?.nupl?.value           ?? 0;
-  const resTrend = glassnode?.reserveTrend ?? existing?.exchange_reserves?.trend ?? 'stable';
-
-  // 归一化
-  const normalizedScores = {
-    mvrv_z:            normalizeMvrvZ(mvrzVal),
+  const ns = {
+    mvrv_z:            normalizeMvrv(mvrvVal),
     puell_multiple:    normalizePuell(puellVal),
     nupl:              normalizeNupl(nuplVal),
     exchange_reserves: normalizeReserves(resTrend),
     fgi:               normalizeFGI(fgiVal),
-    funding_rate:      normalizeFunding(fundingRateVal),
+    funding_rate:      normalizeFunding(fundingVal),
     halving_cycle:     halving.normalized_score,
     etf_flow:          normalizeEtfFlow(etfAvg),
   };
 
-  const cycleScore = computeCycleScore(normalizedScores);
+  const cycleScore = computeCycleScore(ns);
 
   const feed = {
-    updated_at:       today,
-    mvrv_z:           { value: mvrzVal,    normalized_score: normalizedScores.mvrv_z },
-    puell_multiple:   { value: puellVal,   normalized_score: normalizedScores.puell_multiple },
-    nupl:             { value: nuplVal,    normalized_score: normalizedScores.nupl },
-    exchange_reserves: { trend: resTrend,   normalized_score: normalizedScores.exchange_reserves },
-    fgi:              { value: fgiVal, label: fgiLabel, normalized_score: normalizedScores.fgi },
-    funding_rate:     { value: fundingRateVal, trend: fundingTrend, normalized_score: normalizedScores.funding_rate },
-    halving_cycle:    { months_since_halving: halving.months_since_halving, normalized_score: normalizedScores.halving_cycle },
-    etf_flow:         { '7d_avg_usd_m': etfAvg, normalized_score: normalizedScores.etf_flow },
-    current_price:    binance?.currentPrice ?? existing?.current_price ?? null,
-    cycle_score:      cycleScore,
+    updated_at:        today,
+    mvrv_z:            { value: parseFloat(mvrvVal.toFixed(4)),   normalized_score: ns.mvrv_z },
+    puell_multiple:    { value: parseFloat(puellVal.toFixed(4)),  normalized_score: ns.puell_multiple },
+    nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl },
+    exchange_reserves: { trend: resTrend,                          normalized_score: ns.exchange_reserves },
+    fgi:               { value: fgiVal, label: fgiLabel,           normalized_score: ns.fgi },
+    funding_rate:      { value: parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, normalized_score: ns.funding_rate },
+    halving_cycle:     { months_since_halving: halving.months_since_halving, normalized_score: ns.halving_cycle },
+    etf_flow:          { '7d_avg_usd_m': etfAvg,                  normalized_score: ns.etf_flow },
+    current_price:     priceNow,
+    cycle_score:       cycleScore,
     degraded,
-    degraded_reason:  degradedReason,
+    degraded_reason:   degradedReason,
   };
 
   await writeFile(OUTPUT, JSON.stringify(feed, null, 2), 'utf8');
 
-  console.log(`[fetch-signals] 写入 signals-feed.json`);
-  console.log(`  日期：${today}`);
-  console.log(`  周期分：${cycleScore}${degraded ? '（降级模式）' : ''}`);
-  console.log(`  MVRV-Z：${mvrzVal}  Puell：${puellVal}  NUPL：${nuplVal}`);
-  console.log(`  FGI：${fgiVal}（${fgiLabel}）`);
-  console.log(`  价格：$${binance?.currentPrice ?? '-'}`);
-  if (degraded) console.warn(`  ⚠️ 降级：${degradedReason}`);
+  console.log(`[fetch-signals] 写入 docs/signals-feed.json`);
+  console.log(`  日期：${today}  周期分：${cycleScore}${degraded ? '（降级）' : ''}`);
+  console.log(`  MVRV：${mvrvVal.toFixed(3)}  Puell：${puellVal.toFixed(3)}（缓存）  NUPL：${nuplVal.toFixed(3)}（缓存）`);
+  console.log(`  FGI：${fgiVal}（${fgiLabel}）  价格：$${priceNow ?? '-'}  资金费率：${(fundingVal * 100).toFixed(4)}%`);
+  if (degraded) console.warn(`  ⚠️ ${degradedReason}`);
 }
 
 main().catch(err => {
