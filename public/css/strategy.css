@@ -1,0 +1,723 @@
+/* ─────────────────────────────────────────
+   BTC 智能定投 — 策略页 v2
+───────────────────────────────────────── */
+@import url('../styles/design-system.css');
+
+/* ── Nav（直接定义，不依赖 @import 生效时序） ── */
+.header { display: flex; align-items: center; justify-content: space-between; height: 52px; }
+.logo { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--t1); text-decoration: none; letter-spacing: -0.1px; }
+.logo-icon { width: 26px; height: 26px; border-radius: 7px; background: var(--t1); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+.nav { display: flex; background: var(--card); border-radius: 6px; padding: 3px; gap: 2px; flex-shrink: 0; }
+.nav a { font-size: 12px; font-weight: 500; color: var(--t2); text-decoration: none; padding: 4px 6px; border-radius: 4px; white-space: nowrap; }
+.nav a.active { background: var(--bg); color: var(--t1); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+/* ── entrance animation ── */
+.s-main {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.45s var(--ease-out), transform 0.45s var(--ease-out);
+}
+.s-main.show { opacity: 1; transform: translateY(0); }
+
+/* ── skeleton blocks ── */
+.sk-tall  { height: 100px; border-radius: var(--radius); margin-bottom: 10px; }
+.sk-short { height:  64px; border-radius: var(--radius); margin-bottom: 10px; }
+
+/* ─────────────────────────────────────
+   SECTION HEADER
+───────────────────────────────────────── */
+.s-section { margin-bottom: 10px; }
+
+.s-section-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+/* ─────────────────────────────────────
+   PERSONA CHIP
+───────────────────────────────────────── */
+.s-persona-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  margin-bottom: 14px;
+}
+.s-persona-pre  { font-size: 11px; font-weight: 600; color: var(--t3); flex-shrink: 0; }
+.s-persona-name { font-size: 13px; font-weight: 700; color: var(--t1); }
+.s-persona-tag  { font-size: 11.5px; color: var(--t2); margin-left: auto; text-align: right; }
+
+/* ─────────────────────────────────────
+   BUDGET INPUT CARD
+───────────────────────────────────────── */
+.s-budget-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.s-budget-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.s-budget-symbol {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--t2);
+  flex-shrink: 0;
+}
+
+.s-budget-input {
+  flex: 1;
+  background: var(--card-2);
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: var(--radius-sm);
+  padding: 10px 13px;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--t1);
+  outline: none;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+  transition: border-color var(--dur-fast);
+  min-width: 0;
+}
+.s-budget-input:focus { border-color: var(--t1); }
+.s-budget-input::placeholder { color: var(--t3); font-weight: 400; font-size: 15px; }
+
+.s-budget-confirm {
+  padding: 10px 16px;
+  background: var(--t1);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background var(--dur-fast);
+}
+.s-budget-confirm:hover { background: var(--cta-hover); }
+
+.s-budget-hint {
+  font-size: 11.5px;
+  color: var(--t3);
+  line-height: 1.5;
+}
+
+/* Budget display (after saved) */
+.s-budget-display {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.s-budget-amount {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: -0.8px;
+  font-variant-numeric: tabular-nums;
+}
+.s-budget-change {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t3);
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--card-2);
+  transition: background var(--dur-fast);
+  flex-shrink: 0;
+}
+.s-budget-change:hover { background: rgba(0,0,0,0.1); }
+
+/* ─────────────────────────────────────
+   MARKET CARD (cycle score)
+───────────────────────────────────────── */
+.s-market-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px 16px 13px;
+}
+
+.s-score-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 13px;
+}
+
+.s-score-num {
+  font-size: 54px;
+  font-weight: 700;
+  letter-spacing: -2px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.s-score-num.green { color: var(--green); }
+.s-score-num.amber { color: var(--amber); }
+.s-score-num.red   { color: var(--red); }
+
+.s-score-right { padding-top: 5px; flex: 1; }
+.s-score-phase { font-size: 15px; font-weight: 700; color: var(--t1); margin-bottom: 4px; letter-spacing: -0.2px; }
+.s-score-desc  { font-size: 12.5px; color: var(--t2); line-height: 1.55; }
+
+.s-score-track {
+  height: 5px;
+  background: var(--bar-track);
+  border-radius: 3px;
+  margin-bottom: 5px;
+  overflow: hidden;
+}
+.s-score-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.7s var(--ease-out);
+}
+.s-score-fill.green { background: var(--green-bar); }
+.s-score-fill.amber { background: var(--amber-bar); }
+.s-score-fill.red   { background: var(--red-bar); }
+
+.s-score-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--t3);
+  margin-top: 4px;
+}
+
+/* ─────────────────────────────────────
+   ENTRY TIMING CARD
+───────────────────────────────────────── */
+.s-timing-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.s-timing-verdict {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.s-timing-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.s-timing-dot.green { background: var(--green-bar); box-shadow: 0 0 0 3px rgba(60,160,108,.18); }
+.s-timing-dot.amber { background: var(--amber-bar); box-shadow: 0 0 0 3px rgba(204,144,16,.18); }
+.s-timing-dot.red   { background: var(--red-bar);   box-shadow: 0 0 0 3px rgba(224,64,64,.18); }
+
+.s-timing-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: -0.2px;
+}
+.s-timing-label.green { color: var(--green); }
+.s-timing-label.red   { color: var(--red); }
+
+.s-timing-reason {
+  font-size: 13.5px;
+  color: var(--t2);
+  line-height: 1.7;
+  padding-left: 20px;
+}
+
+/* ─────────────────────────────────────
+   BULLET POOL CARDS (三子弹)
+───────────────────────────────────────── */
+.s-bullets-list { display: flex; flex-direction: column; gap: 8px; }
+
+.s-bullet-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 15px 16px;
+  border-left: 3px solid transparent;
+}
+.s-bullet-card.base    { border-left-color: var(--green-bar); }
+.s-bullet-card.signal  { border-left-color: var(--amber-bar); }
+.s-bullet-card.extreme { border-left-color: var(--red-bar); }
+
+.s-bullet-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.s-bullet-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--t1);
+}
+
+.s-bullet-pct {
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.s-bullet-pct.base    { color: var(--green); }
+.s-bullet-pct.signal  { color: var(--amber); }
+.s-bullet-pct.extreme { color: var(--red); }
+
+.s-bullet-amount {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--t1);
+  margin-bottom: 5px;
+  line-height: 1.2;
+}
+.s-bullet-amount .unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t3);
+  letter-spacing: 0;
+}
+
+.s-bullet-exec {
+  font-size: 12.5px;
+  color: var(--t2);
+  line-height: 1.55;
+}
+
+.s-bullet-no-budget {
+  font-size: 12.5px;
+  color: var(--t3);
+  font-style: italic;
+}
+
+/* ─────────────────────────────────────
+   SIGNAL LEVEL CARDS (四级信号)
+   Extends design-system .signal-card
+───────────────────────────────────────── */
+.s-signal-active { outline: 1.5px solid rgba(60,160,108,.3); }
+.s-signal-active.amber-outline { outline-color: rgba(168,113,8,.25); }
+.s-signal-active.red-outline   { outline-color: rgba(196,48,48,.25); }
+
+.cond-value {
+  font-size: 11.5px;
+  color: var(--t3);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  padding-left: 8px;
+}
+
+.s-signal-exec {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  background: rgba(0,0,0,0.02);
+}
+.s-signal-exec-label { font-size: 12px; color: var(--t2); }
+.s-signal-exec-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t1);
+  font-variant-numeric: tabular-nums;
+}
+
+.s-cooldown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 15px;
+  border-top: 1px solid rgba(0,0,0,0.05);
+}
+.s-cooldown-left  { flex: 1; }
+.s-cooldown-label { font-size: 12px; color: var(--t2); margin-bottom: 3px; }
+.s-cooldown-why   { font-size: 11.5px; color: var(--t3); line-height: 1.5; }
+.s-cooldown-days  {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--t1);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.sig-note {
+  font-size: 11.5px;
+  color: var(--t3);
+  padding: 6px 15px 10px;
+  border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+/* ─────────────────────────────────────
+   LOSS ANCHOR ROWS (collapsible)
+───────────────────────────────────────── */
+.s-loss-list {
+  background: var(--card);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.s-loss-row {
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.s-loss-row:last-child { border-bottom: none; }
+
+.s-loss-summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 16px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.s-loss-summary::-webkit-details-marker { display: none; }
+.s-loss-summary::after {
+  content: '›';
+  margin-left: auto;
+  color: var(--t3);
+  font-size: 16px;
+  transition: transform 0.15s;
+}
+.s-loss-row[open] .s-loss-summary::after { transform: rotate(90deg); }
+
+.s-loss-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.s-loss-badge.green { background: rgba(30,125,80,.1);  color: var(--green); }
+.s-loss-badge.amber { background: rgba(168,113,8,.1);  color: var(--amber); }
+.s-loss-badge.red   { background: rgba(196,48,48,.1);  color: var(--red); }
+
+.s-loss-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t1);
+}
+
+.s-loss-desc {
+  font-size: 13px;
+  color: var(--t2);
+  line-height: 1.65;
+  padding: 0 16px 12px 16px;
+}
+
+/* ─────────────────────────────────────
+   EXIT CONDITIONS
+───────────────────────────────────────── */
+.s-exit-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 15px 16px;
+}
+
+.s-exit-subtitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: 0.05em;
+  margin-bottom: 9px;
+}
+
+.s-exit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.s-exit-item:last-child { border-bottom: none; }
+
+.s-exit-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--t3);
+  flex-shrink: 0;
+}
+.s-exit-item.system .s-exit-dot  { background: var(--amber-bar); }
+.s-exit-item.personal .s-exit-dot { background: var(--green-bar); }
+
+.s-exit-label { font-size: 13px; font-weight: 600; color: var(--t1); }
+
+.s-exit-divider {
+  height: 1px;
+  background: rgba(0,0,0,0.06);
+  margin: 12px 0;
+}
+
+/* ─────────────────────────────────────
+   HISTORICAL WINDOW ROW (in market card)
+───────────────────────────────────────── */
+.s-history-row,
+.s-bear-duration-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+.s-history-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t3);
+  white-space: nowrap;
+  padding-top: 1px;
+  flex-shrink: 0;
+}
+
+.s-history-body { flex: 1; }
+
+.s-history-range {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--amber);
+  margin-bottom: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.s-history-context {
+  font-size: 11.5px;
+  color: var(--t3);
+  line-height: 1.55;
+}
+
+/* ─────────────────────────────────────
+   POOL GROUP (signal section restructure)
+   Header bar visually matches bullet cards
+───────────────────────────────────────── */
+.s-pool-group { margin-bottom: 12px; }
+
+.s-pool-group-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.s-pool-group-header.base    { background: rgba(30,125,80,0.1); }
+.s-pool-group-header.signal  { background: rgba(168,113,8,0.09); }
+.s-pool-group-header.extreme { background: rgba(196,48,48,0.08); }
+
+.s-pool-group-name {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.s-pool-group-name.base    { color: var(--green); }
+.s-pool-group-name.signal  { color: var(--amber); }
+.s-pool-group-name.extreme { color: var(--red); }
+
+.s-pool-group-pct {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--t3);
+}
+
+.s-pool-group-amount {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Base pool rule card — non-expandable, flush under header */
+.s-base-rule-card {
+  background: var(--card);
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 2px 0 4px;
+}
+
+.s-base-rule-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 15px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  font-size: 13px;
+}
+.s-base-rule-row:last-child { border-bottom: none; }
+.s-base-rule-label { color: var(--t2); flex-shrink: 0; }
+.s-base-rule-value { font-weight: 600; color: var(--t1); text-align: right; }
+
+/* Signal cards within pool group — flush under header, no top gap */
+.s-pool-signals { background: var(--card); border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+
+.s-pool-signals .signal-card {
+  border-radius: 0;
+  margin-bottom: 0;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+.s-pool-signals .signal-card:first-child { border-top: none; }
+
+/* ─────────────────────────────────────
+   SECTION GAP
+───────────────────────────────────────── */
+.s-gap { height: 8px; }
+
+/* ─────────────────────────────────────
+   IMPORT CODE CARD
+───────────────────────────────────────── */
+.s-code-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+}
+
+.s-code-desc {
+  font-size: 13px;
+  color: var(--t2);
+  line-height: 1.65;
+  margin-bottom: 16px;
+}
+.s-code-desc strong { color: var(--t1); font-weight: 600; }
+
+/* 生成按钮 */
+.s-code-gen-btn {
+  width: 100%;
+  padding: 13px 0;
+  background: var(--t1);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background var(--dur-fast);
+}
+.s-code-gen-btn:hover { background: var(--cta-hover); }
+
+/* 生成中 */
+.s-code-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0 4px;
+  font-size: 13.5px;
+  color: var(--t2);
+}
+.s-code-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0,0,0,0.15);
+  border-top-color: var(--t1);
+  border-radius: 50%;
+  animation: s-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes s-spin { to { transform: rotate(360deg); } }
+
+/* 码展示 */
+.s-code-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.s-code-digits {
+  flex: 1;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  color: var(--t1);
+  font-variant-numeric: tabular-nums;
+  background: var(--card-2);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  text-align: center;
+}
+
+.s-code-copy-btn {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1.5px solid rgba(0,0,0,0.15);
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t2);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color var(--dur-fast), color var(--dur-fast);
+}
+.s-code-copy-btn:hover { border-color: var(--t1); color: var(--t1); }
+
+.s-code-meta {
+  font-size: 11.5px;
+  color: var(--t3);
+  margin-bottom: 12px;
+}
+
+.s-code-refresh-btn {
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--t3);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.s-code-refresh-btn:hover { color: var(--t2); }
+
+/* 错误态 */
+.s-code-error {
+  font-size: 13px;
+  color: var(--red);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+/* 次级 CTA（回测按钮降级为浅色） */
+.cta-btn.cta-secondary {
+  background: transparent;
+  color: var(--t2);
+  border: 1.5px solid rgba(0,0,0,0.15);
+}
+.cta-btn.cta-secondary:hover {
+  background: var(--card-2);
+  color: var(--t1);
+  border-color: rgba(0,0,0,0.25);
+}
+.cta-btn.cta-secondary .arrow { color: var(--t3); }
+
+.s-install-err {
+  font-size: 12.5px;
+  color: var(--red);
+  margin-top: 8px;
+  text-align: center;
+  line-height: 1.5;
+}

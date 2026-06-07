@@ -1,0 +1,379 @@
+/* ─────────────────────────────────────────
+   BTC 智能定投 — 问卷页面样式
+   Design: warm cream · one-question-at-a-time · mobile-first
+───────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg:      #f0ede8;
+  --card:    #e7e3db;
+  --card-2:  #dedad1;
+
+  --t1: #1c1c1e;
+  --t2: #7c7870;
+  --t3: #aeaaa4;
+
+  --green:     #1e7d50;
+  --green-bar: #3ca06c;
+  --amber:     #a87108;
+  --amber-bar: #cc9010;
+  --red:       #c43030;
+
+  --bar-track: rgba(0,0,0,0.09);
+
+  --radius:    14px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
+  --font: 'Noto Sans SC', -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; }
+
+body {
+  background: var(--bg);
+  color: var(--t1);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 18px 48px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--t1);
+  letter-spacing: -0.1px;
+  text-decoration: none;
+}
+
+.logo-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--t1);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.nav {
+  display: flex;
+  background: var(--card);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.nav a {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  text-decoration: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.nav a.active {
+  background: var(--bg);
+  color: var(--t1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ── Progress bar ── */
+.q-progress-track {
+  height: 3px;
+  background: var(--bar-track);
+  border-radius: 2px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.q-progress-fill {
+  height: 100%;
+  background: var(--t1);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Meta row: section tag + counter ── */
+.q-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.q-section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--t2);
+  background: var(--card);
+  padding: 5px 11px;
+  border-radius: var(--radius-xs);
+  letter-spacing: 0.01em;
+  transition: color 0.2s;
+}
+
+.q-section-tag::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--t3);
+  transition: background 0.2s;
+}
+
+.q-section-tag.fund-nature::before  { background: #6e9bb8; }
+.q-section-tag.resilience::before   { background: var(--amber-bar); }
+.q-section-tag.knowledge::before    { background: var(--green-bar); }
+.q-section-tag.fund-structure::before { background: #9e7abf; }
+.q-section-tag.exit-horizon::before { background: #b87a5a; }
+.q-section-tag.history::before      { background: #7a8fa6; }
+
+.q-counter {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Stage: animated question area ── */
+.q-stage {
+  min-height: 380px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Question card ── */
+.q-card {
+  will-change: transform, opacity;
+}
+
+.q-scenario-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--amber);
+  background: rgba(168, 113, 8, 0.1);
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  margin-bottom: 14px;
+  letter-spacing: 0.02em;
+}
+
+.q-text {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.4px;
+  color: var(--t1);
+  margin-bottom: 22px;
+}
+
+/* ── Options ── */
+.q-options {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.q-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.q-option:hover {
+  background: var(--card-2);
+}
+
+.q-option:active {
+  transform: scale(0.98);
+}
+
+.q-option.selected {
+  border-color: var(--t1);
+  background: var(--card-2);
+}
+
+.q-option.selected .opt-circle {
+  background: var(--t1);
+  border-color: var(--t1);
+}
+
+.q-option.selected .opt-circle::after {
+  opacity: 1;
+}
+
+.q-option.dimmed {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Circle indicator */
+.opt-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--t3);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, border-color 0.12s;
+  position: relative;
+}
+
+.opt-circle::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.opt-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--t1);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.q-option.selected .opt-text {
+  color: var(--t1);
+}
+
+/* Skip/neutral option styling */
+.q-option.opt-skip {
+  background: transparent;
+  border: 1.5px solid rgba(0,0,0,0.08);
+}
+
+.q-option.opt-skip .opt-text {
+  color: var(--t3);
+  font-size: 13px;
+}
+
+.q-option.opt-skip .opt-circle {
+  border-color: rgba(0,0,0,0.15);
+}
+
+/* ── Back button row ── */
+.q-nav-row {
+  display: flex;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.q-back-btn {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.q-back-btn:hover { color: var(--t2); }
+.q-back-btn:disabled { opacity: 0; pointer-events: none; }
+
+/* ── Completion overlay ── */
+.q-complete {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.q-complete.show { display: flex; }
+
+.q-complete-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  animation: pulse-icon 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-icon {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.08); }
+}
+
+.q-complete-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--t1);
+  margin-bottom: 10px;
+}
+
+.q-complete-desc {
+  font-size: 14px;
+  color: var(--t2);
+  line-height: 1.6;
+}
+
+/* ── Transition animations ── */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.q-card.anim-forward { animation: slideInRight 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+.q-card.anim-back    { animation: slideInLeft 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94); }

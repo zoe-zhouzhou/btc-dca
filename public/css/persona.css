@@ -1,0 +1,407 @@
+/* ─────────────────────────────────────────
+   BTC 智能定投 — 画像展示页样式 v2
+───────────────────────────────────────── */
+@import url('../styles/design-system.css');
+
+/* ── Nav（直接定义，不依赖 @import 生效时序） ── */
+.header { display: flex; align-items: center; justify-content: space-between; height: 52px; }
+.logo { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--t1); text-decoration: none; letter-spacing: -0.1px; }
+.logo-icon { width: 26px; height: 26px; border-radius: 7px; background: var(--t1); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+.nav { display: flex; background: var(--card); border-radius: 6px; padding: 3px; gap: 2px; flex-shrink: 0; }
+.nav a { font-size: 12px; font-weight: 500; color: var(--t2); text-decoration: none; padding: 4px 6px; border-radius: 4px; white-space: nowrap; }
+.nav a.active { background: var(--bg); color: var(--t1); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+/* ── Main content entrance animation ── */
+.p-main {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.45s var(--ease-out), transform 0.45s var(--ease-out);
+}
+.p-main.show { opacity: 1; transform: translateY(0); }
+
+/* ── Error state ── */
+.p-error {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  text-align: center;
+  padding: 40px 20px;
+}
+.p-error.show { display: flex; }
+.p-error-icon  { font-size: 32px; margin-bottom: 16px; color: var(--t3); }
+.p-error-title { font-size: 18px; font-weight: 700; color: var(--t1); margin-bottom: 8px; }
+.p-error-desc  { font-size: 14px; color: var(--t2); line-height: 1.6; margin-bottom: 24px; }
+
+/* ─────────────────────────────────────
+   HERO — avatar + name + tag chips
+───────────────────────────────────────── */
+.p-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 0 18px;
+}
+
+.p-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: rgba(74, 127, 193, 0.13);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.p-avatar svg {
+  width: 30px;
+  height: 30px;
+}
+
+.p-hero-info { flex: 1; padding-top: 3px; }
+
+.p-hero-name {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.7px;
+  color: var(--t1);
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.p-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.p-hero-chip {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--t2);
+  background: var(--card);
+  padding: 4px 11px;
+  border-radius: var(--radius-xs);
+  letter-spacing: 0.01em;
+}
+
+/* ─────────────────────────────────────
+   "你是谁" QUOTE CARD
+   Left accent border, subtle card bg
+───────────────────────────────────────── */
+.p-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t3);
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.p-who-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px 16px 16px 20px;
+  border-left: 3px solid rgba(74, 127, 193, 0.55);
+  margin-bottom: 10px;
+}
+
+.p-who-text {
+  font-size: 14px;
+  color: var(--t1);
+  line-height: 1.75;
+}
+
+/* ─────────────────────────────────────
+   五维度画像 GRID
+───────────────────────────────────────── */
+.p-dims-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.p-dims-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+
+/* 5th dim (eh) spans full width */
+.p-dim-item.span-full {
+  grid-column: 1 / -1;
+}
+
+.p-dim-key {
+  font-size: 11px;
+  color: var(--t3);
+  font-weight: 500;
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+}
+
+.p-dim-track {
+  height: 3px;
+  background: var(--bar-track);
+  border-radius: 2px;
+  margin-bottom: 5px;
+  overflow: hidden;
+}
+
+.p-dim-fill {
+  height: 100%;
+  border-radius: 2px;
+  width: 0;
+  transition: width 0.7s var(--ease-out);
+}
+
+.p-dim-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t2);
+  line-height: 1.4;
+}
+
+.p-dim-note {
+  font-size: 11px;
+  color: var(--t3);
+  margin-top: 1px;
+}
+
+/* ─────────────────────────────────────
+   STRENGTHS & BLINDSPOTS SECTIONS
+───────────────────────────────────────── */
+.p-section {
+  margin-bottom: 10px;
+}
+
+.p-bullet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.p-bullet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--t1);
+  line-height: 1.6;
+}
+
+.p-bullet-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.p-bullet-dot.green { background: var(--green-bar); }
+.p-bullet-dot.amber { background: var(--amber-bar); }
+.p-bullet-dot.red   { background: var(--red-bar, #e04040); }
+
+/* ─────────────────────────────────────
+   TENSION WARNING CARD
+   Amber tinted, no heavy border
+───────────────────────────────────────── */
+.p-tension-card {
+  background: rgba(168, 113, 8, 0.07);
+  border: 1px solid rgba(168, 113, 8, 0.16);
+  border-radius: var(--radius);
+  padding: 15px 16px;
+  margin-bottom: 10px;
+}
+
+.p-tension-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--amber);
+  margin-bottom: 7px;
+  letter-spacing: -0.1px;
+}
+
+.p-tension-text {
+  font-size: 13.5px;
+  color: var(--t1);
+  line-height: 1.7;
+}
+
+/* ─────────────────────────────────────
+   SECTION GAP
+───────────────────────────────────────── */
+.p-gap { height: 10px; }
+
+/* ─────────────────────────────────────
+   DECLARATION (secondary section below CTA)
+───────────────────────────────────────── */
+.p-decl-section {
+  margin-top: 18px;
+}
+
+.p-decl {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.p-decl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.p-decl-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t3);
+  letter-spacing: 0.04em;
+}
+
+.p-decl-edit-btn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  background: var(--card-2);
+  border: none;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  transition: background var(--dur-fast);
+  font-family: var(--font);
+}
+.p-decl-edit-btn:hover { background: rgba(0,0,0,0.1); }
+
+.p-decl-text {
+  font-size: 14px;
+  color: var(--t1);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  display: block;
+}
+
+.p-decl-textarea {
+  display: none;
+  width: 100%;
+  background: var(--card-2);
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--t1);
+  line-height: 1.75;
+  resize: vertical;
+  min-height: 200px;
+  outline: none;
+  transition: border-color var(--dur-fast);
+}
+.p-decl-textarea:focus { border-color: var(--t1); }
+
+.p-decl.editing .p-decl-text     { display: none; }
+.p-decl.editing .p-decl-textarea { display: block; }
+.p-decl.editing .p-decl-edit-btn { color: var(--t1); }
+
+.p-decl-save-btn {
+  display: none;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--t1);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background var(--dur-fast);
+}
+.p-decl.editing .p-decl-save-btn { display: block; }
+.p-decl-save-btn:hover { background: var(--cta-hover); }
+
+/* ─────────────────────────────────────
+   CLAUDE API (optional, collapsed)
+───────────────────────────────────────── */
+.p-claude {
+  background: var(--card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.p-claude summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.p-claude summary::-webkit-details-marker { display: none; }
+
+.p-claude-title { font-size: 13px; font-weight: 600; color: var(--t2); }
+
+.p-claude-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--t3);
+  background: var(--card-2);
+  padding: 3px 9px;
+  border-radius: var(--radius-xs);
+}
+
+.p-claude-body {
+  border-top: 1px solid rgba(0,0,0,0.06);
+  padding: 14px 16px 16px;
+}
+
+.p-claude-desc {
+  font-size: 12.5px;
+  color: var(--t2);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.p-claude-input-row { display: flex; gap: 8px; }
+
+.p-claude-key-input {
+  flex: 1;
+  background: var(--card-2);
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--t1);
+  outline: none;
+  transition: border-color var(--dur-fast);
+}
+.p-claude-key-input:focus { border-color: var(--t1); }
+.p-claude-key-input::placeholder { color: var(--t3); }
+
+.p-claude-gen-btn {
+  padding: 10px 16px;
+  background: var(--t1);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  white-space: nowrap;
+  transition: background var(--dur-fast), opacity var(--dur-fast);
+}
+.p-claude-gen-btn:hover { background: var(--cta-hover); }
+.p-claude-gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.p-claude-status { font-size: 12px; color: var(--t3); margin-top: 8px; min-height: 18px; }
+.p-claude-status.error   { color: var(--red); }
+.p-claude-status.success { color: var(--green); }

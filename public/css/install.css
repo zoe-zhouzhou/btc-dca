@@ -1,0 +1,537 @@
+/* ─────────────────────────────────────────
+   BTC 智能定投 — 安装页
+───────────────────────────────────────── */
+@import url('../styles/design-system.css');
+
+/* ── Nav（直接定义，不依赖 @import 生效时序） ── */
+.header { display: flex; align-items: center; justify-content: space-between; height: 52px; }
+.logo { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--t1); text-decoration: none; letter-spacing: -0.1px; }
+.logo-icon { width: 26px; height: 26px; border-radius: 7px; background: var(--t1); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+.nav { display: flex; background: var(--card); border-radius: 6px; padding: 3px; gap: 2px; flex-shrink: 0; }
+.nav a { font-size: 12px; font-weight: 500; color: var(--t2); text-decoration: none; padding: 4px 6px; border-radius: 4px; white-space: nowrap; }
+.nav a.active { background: var(--bg); color: var(--t1); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+/* ── 英雄区 ──────────────────────────────── */
+.i-hero {
+  padding: 24px 4px 20px;
+}
+.i-hero-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+.i-hero-sub {
+  font-size: 14px;
+  color: var(--t2);
+  line-height: 1.5;
+}
+
+/* ── 步骤节 ──────────────────────────────── */
+.i-section {
+  margin-bottom: 10px;
+}
+
+.i-section-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+  padding: 0 2px;
+}
+
+.i-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t1);
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+
+.i-section-body {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.i-desc {
+  font-size: 13px;
+  color: var(--t2);
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+
+/* ── 导入码输入 ──────────────────────────── */
+.i-code-input-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.i-code-input {
+  flex: 1;
+  background: var(--card-2);
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-family: var(--font);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  outline: none;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--dur-fast);
+}
+.i-code-input:focus { border-color: var(--t1); }
+.i-code-input::placeholder { color: var(--t3); font-weight: 400; font-size: 14px; letter-spacing: 0; }
+
+.i-code-submit {
+  padding: 11px 18px;
+  background: var(--t1);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background var(--dur-fast);
+}
+.i-code-submit:hover { background: var(--cta-hover); }
+
+/* 加载中 */
+.i-code-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0 4px;
+  font-size: 13px;
+  color: var(--t2);
+}
+.i-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0,0,0,0.12);
+  border-top-color: var(--t1);
+  border-radius: 50%;
+  animation: i-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes i-spin { to { transform: rotate(360deg); } }
+
+/* 读取结果 */
+.i-code-result { margin-top: 4px; }
+
+.i-result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.i-result-check {
+  width: 28px;
+  height: 28px;
+  background: rgba(30,125,80,0.12);
+  color: var(--green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.i-result-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t1);
+}
+.i-result-sub {
+  font-size: 11.5px;
+  color: var(--t3);
+  margin-top: 2px;
+}
+
+.i-result-reset {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--t3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+  transition: background var(--dur-fast);
+}
+.i-result-reset:hover { background: var(--card-2); color: var(--t2); }
+
+.i-result-grid {
+  background: var(--card-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.i-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 13px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  font-size: 13px;
+}
+.i-result-row:last-child { border-bottom: none; }
+.i-result-k { color: var(--t2); flex-shrink: 0; }
+.i-result-v { font-weight: 600; color: var(--t1); text-align: right; }
+
+/* 错误态 */
+.i-code-error {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--red);
+  line-height: 1.55;
+}
+.i-error-retry {
+  background: none;
+  border: 1.5px solid rgba(0,0,0,0.15);
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t2);
+  padding: 9px 16px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: border-color var(--dur-fast);
+}
+.i-error-retry:hover { border-color: var(--t1); color: var(--t1); }
+
+.i-code-hint {
+  font-size: 12px;
+  color: var(--t3);
+  margin-top: 10px;
+}
+
+/* ── 前提条件 ────────────────────────────── */
+.i-prereq-list { display: flex; flex-direction: column; gap: 12px; }
+
+.i-prereq-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.i-prereq-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--t3);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.i-prereq-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t1);
+  margin-bottom: 3px;
+}
+.i-prereq-desc {
+  font-size: 12.5px;
+  color: var(--t2);
+  line-height: 1.5;
+}
+
+/* ── 安装步骤 ────────────────────────────── */
+.i-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+.i-step:last-child { margin-bottom: 0; }
+
+.i-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--card-2);
+  color: var(--t2);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.i-step-body { flex: 1; min-width: 0; }
+
+.i-step-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--t1);
+  margin-bottom: 6px;
+}
+
+.i-step-desc {
+  font-size: 12.5px;
+  color: var(--t2);
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+
+/* 代码块 */
+.i-code-block {
+  background: var(--card-2);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.i-code-block code {
+  flex: 1;
+  font-family: 'SFMono-Regular', 'Consolas', 'Menlo', monospace;
+  font-size: 12.5px;
+  color: var(--t1);
+  white-space: pre;
+  line-height: 1.6;
+  min-width: 0;
+}
+
+.i-code-placeholder {
+  color: var(--amber);
+  font-style: italic;
+}
+
+.i-copy-btn {
+  background: none;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: var(--radius-xs);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t3);
+  padding: 3px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: border-color var(--dur-fast), color var(--dur-fast);
+  align-self: center;
+}
+.i-copy-btn:hover { border-color: var(--t2); color: var(--t2); }
+
+/* ── 验证区 ──────────────────────────────── */
+.i-verify-output {
+  background: var(--card-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.i-verify-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 13px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  font-size: 12.5px;
+}
+.i-verify-line:last-child { border-bottom: none; }
+.i-verify-key { color: var(--t3); flex-shrink: 0; }
+.i-verify-val { font-weight: 600; color: var(--t1); text-align: right; }
+
+/* ── FAQ ─────────────────────────────────── */
+.i-faq .i-section-body { padding: 10px 0; background: transparent; }
+
+.i-faq-item {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.i-faq-item summary {
+  padding: 13px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--t1);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+.i-faq-item summary::-webkit-details-marker { display: none; }
+.i-faq-item summary::after {
+  content: '›';
+  font-size: 18px;
+  color: var(--t3);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.i-faq-item[open] summary::after { transform: rotate(90deg); }
+
+.i-faq-body {
+  padding: 0 16px 14px;
+  font-size: 13px;
+  color: var(--t2);
+  line-height: 1.65;
+}
+.i-faq-body code {
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 12px;
+  background: var(--card-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--t1);
+}
+
+/* ── 链接 ──────────────────────────────── */
+.i-link {
+  color: var(--t1);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── 平台选择 tabs ───────────────────────── */
+.i-platform-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.i-platform-tab {
+  flex: 1;
+  padding: 10px 12px;
+  background: var(--card-2);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t2);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color var(--dur-fast), color var(--dur-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.i-platform-tab.active {
+  border-color: var(--t1);
+  color: var(--t1);
+}
+.i-platform-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--green);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: var(--radius-xs);
+  letter-spacing: 0;
+}
+
+.i-platform-desc {
+  font-size: 13px;
+  color: var(--t2);
+  line-height: 1.6;
+}
+
+/* ── 导入码大字展示框 ─────────────────────── */
+.i-code-display-box {
+  background: var(--card-2);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+.i-code-display-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.i-code-display-digits {
+  font-family: 'SFMono-Regular', 'Consolas', 'Menlo', monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--t1);
+  letter-spacing: 0.5px;
+  word-break: break-all;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.i-code-display-copy {
+  background: var(--t1);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: background var(--dur-fast);
+}
+.i-code-display-copy:hover { background: var(--cta-hover); }
+
+/* ── 步骤提示 ─────────────────────────────── */
+.i-step-hint {
+  font-size: 12px;
+  color: var(--t2);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.i-step-hint strong {
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 导入码 widget（内嵌在安装步骤 Step 2 中） ─── */
+.i-code-widget-label {
+  font-size: 12.5px;
+  color: var(--t2);
+  margin: 12px 0 8px;
+  line-height: 1.5;
+}
+
+/* 让 display-box 在 widget 中顶部无额外间距 */
+#iCodeWidget .i-code-display-box {
+  margin-top: 0;
+}
+
+/* 让 input-wrap 在 widget 中顶部无额外间距 */
+#iCodeWidget .i-code-input-wrap {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* ── 底部间距 ───────────────────────────── */
+.i-bottom-gap { height: 40px; }

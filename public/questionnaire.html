@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BTC 智能定投 — 投资者问卷</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="css/questionnaire.css" />
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header" style="display:flex;align-items:center;justify-content:space-between;height:52px">
+    <a href="index.html" class="logo" style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#1c1c1e;text-decoration:none;letter-spacing:-0.1px">
+      <div class="logo-icon" style="width:26px;height:26px;border-radius:7px;background:#1c1c1e;color:#f0ede8;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">₿</div>
+      BTC 智能定投
+    </a>
+    <nav class="nav" style="display:flex;background:#e7e3db;border-radius:6px;padding:3px;gap:2px;flex-shrink:0">
+      <a href="index.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">看板</a>
+      <a href="questionnaire.html" class="active" style="font-size:12px;font-weight:500;color:#1c1c1e;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap;background:#f0ede8;box-shadow:0 1px 3px rgba(0,0,0,.08)">问卷</a>
+      <a href="persona.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">画像</a>
+      <a href="strategy.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">策略</a>
+      <a href="install.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">Skill</a>
+    </nav>
+  </header>
+
+  <!-- Progress bar -->
+  <div class="q-progress-track">
+    <div class="q-progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Meta: section tag + counter -->
+  <div class="q-meta">
+    <span class="q-section-tag" id="qSectionTag">资金性质</span>
+    <span class="q-counter" id="qCounter">1 / 15</span>
+  </div>
+
+  <!-- Question stage (animated) -->
+  <div class="q-stage" id="qStage">
+    <div class="q-card" id="qCard">
+      <!-- Rendered by questionnaire.js -->
+    </div>
+  </div>
+
+  <!-- Back button -->
+  <div class="q-nav-row">
+    <button class="q-back-btn" id="qBackBtn" disabled>← 上一题</button>
+  </div>
+
+  <!-- Completion state (hidden until all questions answered) -->
+  <div class="q-complete" id="qComplete">
+    <div class="q-complete-icon">⚡</div>
+    <div class="q-complete-title">正在分析你的投资画像…</div>
+    <div class="q-complete-desc">根据你的回答，为你匹配最适合的定投策略</div>
+  </div>
+
+</div>
+
+<script src="js/questionnaire.js"></script>
+</body>
+</html>

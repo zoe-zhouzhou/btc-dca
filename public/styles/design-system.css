@@ -1,0 +1,472 @@
+/* ═══════════════════════════════════════════════════
+   BTC 智能定投 — Design System
+   版本：v1.0
+   气质：温暖克制的金融工具感，专业但不冷漠
+   ═══════════════════════════════════════════════════ */
+
+/* ─── 字体引入 ─── */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
+/* ─────────────────────────────────────────
+   COLOR TOKENS
+   背景：暖奶油白（#f0ede8），非纯白
+   卡片：比背景深一层（#e7e3db），靠层次区分，不靠阴影
+   状态色：仅用于数据指示，不做装饰背景
+───────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg:     #f0ede8;   /* 页面底色：暖奶油白 */
+  --card:   #e7e3db;   /* 卡片一级：比底色深 */
+  --card-2: #dedad1;   /* 卡片二级：hover、嵌套用 */
+
+  /* Text — 4层灰度 */
+  --t1: #1c1c1e;       /* 主文字：近黑 */
+  --t2: #7c7870;       /* 次文字：中灰褐 */
+  --t3: #aeaaa4;       /* 三级：标签、辅助说明 */
+  --t4: rgba(0,0,0,0.06); /* 极淡：分隔线、进度条底色 */
+
+  /* Status colors（只用于数据值和指示器，不作背景） */
+  --green:     #1e7d50;   /* 低估 / 看多 */
+  --green-bar: #3ca06c;   /* 进度条填充 */
+  --amber:     #a87108;   /* 中性 / 观望 */
+  --amber-bar: #cc9010;
+  --red:       #c43030;   /* 高估 / 看空 */
+  --red-bar:   #e04040;
+
+  /* Bar track（通用进度条底色） */
+  --bar-track: rgba(0,0,0,0.09);
+
+  /* CTA 专属黑（与背景高对比，引导行动） */
+  --cta-bg:    #1c1c1e;
+  --cta-hover: #2c2c2e;
+
+  /* ─── SPACING ─── */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  14px;
+  --space-lg:  20px;
+  --space-xl:  28px;
+
+  /* ─── BORDER RADIUS ─── */
+  --radius:    14px;   /* 卡片、按钮 */
+  --radius-sm: 10px;   /* 小卡片、警告条 */
+  --radius-xs: 6px;    /* 标签、角标 */
+
+  /* ─── TYPOGRAPHY ─── */
+  --font: 'Noto Sans SC', -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+
+  /* ─── TRANSITIONS ─── */
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 0.12s;
+  --dur-med:  0.2s;
+  --dur-slow: 0.7s;
+}
+
+/* ─────────────────────────────────────────
+   RESET
+───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg);
+  color: var(--t1);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ─────────────────────────────────────────
+   LAYOUT
+───────────────────────────────────────── */
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 18px 40px;
+}
+
+/* ─────────────────────────────────────────
+   HEADER
+   高度固定 52px，无阴影，靠背景区分
+───────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--t1);
+  letter-spacing: -0.1px;
+}
+
+.logo-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--t1);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Segmented nav — pill 内切换，不用下划线 */
+.nav {
+  display: flex;
+  background: var(--card);
+  border-radius: var(--radius-xs);
+  padding: 3px;
+  gap: 2px;
+}
+
+.nav a {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  text-decoration: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+
+.nav a.active {
+  background: var(--bg);
+  color: var(--t1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ─────────────────────────────────────────
+   ALERT BANNER
+   左侧 2px 色块边框，半透明背景，不抢眼
+───────────────────────────────────────── */
+.alert {
+  display: none;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: 11px 14px;
+  margin-bottom: 12px;
+  background: rgba(168, 113, 8, 0.08);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(168, 113, 8, 0.18);
+  font-size: 12.5px;
+  color: var(--amber);
+  line-height: 1.5;
+}
+
+.alert.show { display: flex; }
+.alert strong { font-weight: 600; }
+
+/* ─────────────────────────────────────────
+   CARD（通用卡片基础）
+   无阴影，靠颜色层次区分。背景 var(--card)。
+───────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+}
+
+/* ─────────────────────────────────────────
+   INDICATOR CARD
+   标签（小灰字）→ 语义化状态文案（大彩字）
+   → 进度条（3px）→ 说明（小灰字）
+───────────────────────────────────────── */
+.ind-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px 14px 13px;
+}
+
+.ind-card-label {
+  font-size: 11px;
+  color: var(--t3);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  margin-bottom: 7px;
+}
+
+.ind-card-status {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+  margin-bottom: 6px;
+}
+
+.ind-card-status.green { color: var(--green); }
+.ind-card-status.amber { color: var(--amber); }
+.ind-card-status.red   { color: var(--red); }
+
+.ind-bar-track {
+  height: 3px;
+  background: var(--bar-track);
+  border-radius: 2px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.ind-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+.ind-bar-fill.green { background: var(--green-bar); }
+.ind-bar-fill.amber { background: var(--amber-bar); }
+.ind-bar-fill.red   { background: var(--red-bar); }
+
+.ind-card-desc {
+  font-size: 11.5px;
+  color: var(--t2);
+  line-height: 1.55;
+}
+
+/* ─────────────────────────────────────────
+   STAT CARD（三列上下文数据）
+   标签极小，数值粗体，副文字极细
+───────────────────────────────────────── */
+.stat-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 13px 12px 12px;
+}
+
+.stat-label {
+  font-size: 10.5px;
+  color: var(--t3);
+  font-weight: 500;
+  margin-bottom: 5px;
+  letter-spacing: 0.01em;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--t1);
+  line-height: 1.2;
+  margin-bottom: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-sub {
+  font-size: 10.5px;
+  color: var(--t3);
+  line-height: 1.45;
+}
+
+/* ─────────────────────────────────────────
+   SIGNAL CARD（可展开 details）
+   默认折叠显示摘要，点击展开条件明细
+───────────────────────────────────────── */
+.signal-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.signal-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 15px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.signal-card summary::-webkit-details-marker { display: none; }
+
+.signal-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Status pip */
+.sig-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--t3);
+  flex-shrink: 0;
+}
+
+.sig-dot.green { background: var(--green-bar); box-shadow: 0 0 0 2px rgba(60,160,108,.2); }
+.sig-dot.amber { background: var(--amber-bar); box-shadow: 0 0 0 2px rgba(204,144,16,.2); }
+.sig-dot.red   { background: var(--red-bar);   box-shadow: 0 0 0 2px rgba(224,64,64,.2); animation: pulse 1.8s ease infinite; }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(224,64,64,.2); }
+  50%       { box-shadow: 0 0 0 5px rgba(224,64,64,.08); }
+}
+
+.sig-name { font-size: 13px; font-weight: 600; color: var(--t1); }
+.sig-desc { font-size: 11.5px; color: var(--t2); margin-top: 1px; }
+
+.sig-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sig-chevron {
+  font-size: 18px;
+  color: var(--t3);
+  line-height: 1;
+  transition: transform var(--dur-med);
+}
+
+.signal-card[open] .sig-chevron { transform: rotate(90deg); }
+
+/* Badge */
+.sig-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  background: rgba(0,0,0,0.06);
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+.sig-badge.green { background: rgba(30,125,80,.1);  color: var(--green); }
+.sig-badge.amber { background: rgba(168,113,8,.1);   color: var(--amber); }
+.sig-badge.red   { background: rgba(196,48,48,.1);   color: var(--red); }
+
+/* Expanded conditions */
+.signal-conditions {
+  border-top: 1px solid rgba(0,0,0,0.07);
+  padding: 10px 15px 13px;
+}
+
+.cond-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  font-size: 13px;
+}
+
+.cond-item:last-child { border-bottom: none; }
+
+.cond-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cond-icon.met   { background: rgba(30,125,80,0.12); color: var(--green); }
+.cond-icon.unmet { background: rgba(0,0,0,0.06);     color: var(--t3); }
+
+.cond-text       { color: var(--t1); }
+.cond-text.unmet { color: var(--t3); }
+
+/* ─────────────────────────────────────────
+   CTA BUTTON
+   黑底白字，强对比，作为页面唯一主行动
+───────────────────────────────────────── */
+.cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 18px 22px;
+  background: var(--cta-bg);
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  text-decoration: none;
+  letter-spacing: -0.2px;
+  transition: background var(--dur-fast);
+  border: none;
+  cursor: pointer;
+}
+
+.cta-btn:hover { background: var(--cta-hover); }
+
+.cta-btn .arrow {
+  font-size: 17px;
+  color: rgba(255,255,255,0.5);
+  transition: transform var(--dur-med);
+}
+
+.cta-btn:hover .arrow { transform: translate(3px, -3px); }
+
+/* ─────────────────────────────────────────
+   SKELETON LOADING
+   卡片背景色渐变扫光，文字透明
+───────────────────────────────────────── */
+.sk {
+  background: linear-gradient(90deg, var(--card) 25%, var(--card-2) 50%, var(--card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 4px;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.sk * { visibility: hidden; }
+
+@keyframes shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─────────────────────────────────────────
+   SOURCES（折叠数据来源）
+───────────────────────────────────────── */
+details.sources { margin-top: 6px; }
+
+details.sources summary {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t3);
+  cursor: pointer;
+  list-style: none;
+  text-align: center;
+  padding: 12px 0;
+  letter-spacing: 0.03em;
+  user-select: none;
+}
+
+details.sources summary::-webkit-details-marker { display: none; }
+
+.src-list { padding: 4px 0 8px; }
+
+.src-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  font-size: 12px;
+}
+
+.src-item:last-child { border-bottom: none; }
+.src-metric { color: var(--t2); }
+.src-origin { color: var(--t3); }

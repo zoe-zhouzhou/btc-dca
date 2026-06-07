@@ -1,0 +1,49 @@
+name: Fetch BTC Signals
+
+on:
+  schedule:
+    # 每天 UTC 00:00（北京时间 08:00）运行
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # 支持手动触发，便于调试
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run fetch-signals.js
+        env:
+          GLASSNODE_API_KEY: ${{ secrets.GLASSNODE_API_KEY }}
+          CRYPTOQUANT_API_KEY: ${{ secrets.CRYPTOQUANT_API_KEY }}
+        run: node scripts/fetch-signals.js
+
+      - name: Check if signals-feed.json changed
+        id: check_changes
+        run: |
+          git diff --quiet public/signals-feed.json && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push updated signals-feed.json
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/signals-feed.json
+          git commit -m "chore: update signals-feed.json $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: No changes detected
+        if: steps.check_changes.outputs.changed == 'false'
+        run: echo "signals-feed.json 未变化，跳过提交。"

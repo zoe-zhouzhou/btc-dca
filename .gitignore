@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+.DS_Store?
+._*
+
+# Node
+node_modules/
+npm-debug.log*
+
+# 本地临时文件
+*.local
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code 内部配置（本地工具，不进仓库）
+.claude/
+
+# 用户隐私数据（不进仓库）
+~/.btc-dca/

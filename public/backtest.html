@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BTC 智能定投 — 历史回测</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="css/backtest.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="header" style="display:flex;align-items:center;justify-content:space-between;height:52px">
+    <a href="index.html" class="logo" style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#1c1c1e;text-decoration:none;letter-spacing:-0.1px">
+      <div class="logo-icon" style="width:26px;height:26px;border-radius:7px;background:#1c1c1e;color:#f0ede8;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">₿</div>
+      BTC 智能定投
+    </a>
+    <nav class="nav" style="display:flex;background:#e7e3db;border-radius:6px;padding:3px;gap:2px;flex-shrink:0">
+      <a href="index.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">看板</a>
+      <a href="questionnaire.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">问卷</a>
+      <a href="persona.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">画像</a>
+      <a href="strategy.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">策略</a>
+      <a href="install.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">Skill</a>
+    </nav>
+  </header>
+
+  <!-- ── Loading ── -->
+  <div id="btLoading">
+    <div class="sk-chart sk"></div>
+    <div class="sk-stats sk"></div>
+    <div class="sk-short sk"></div>
+  </div>
+
+  <!-- ── Main ── -->
+  <div class="bt-main" id="btMain">
+
+    <!-- 1. 标题 -->
+    <div class="bt-header-card">
+      <div class="bt-header-title">历史回测验证</div>
+      <div class="bt-header-desc">
+        基于两个最近熊市的 BTC 历史价格，用你的三子弹策略做模拟回测。
+        指标为近似值（MVRV-Z / Puell / NUPL 均基于价格近似）。
+      </div>
+    </div>
+
+    <!-- 2. 时间范围 -->
+    <div class="bt-range-row" id="btRangeRow">
+      <button class="bt-range-btn" data-start="2021-11-01" data-end="2024-12-22" data-label="2022 熊市">2022 熊市 → 24年顶</button>
+      <button class="bt-range-btn" data-start="2018-01-01" data-end="2021-12-05" data-label="2018–20 熊市">2018 熊市 → 21年顶</button>
+    </div>
+
+    <!-- 3. 熊市说明 -->
+    <div class="bt-bear-note" id="btBearNote" style="display:none">
+      <strong id="btBearTitle"></strong>
+      <span id="btBearDesc"></span>
+    </div>
+
+    <!-- 4. 图表 -->
+    <div class="bt-chart-card">
+      <div class="bt-chart-header">
+        <div class="bt-chart-title">三子弹策略 · BTC 价格走势 + 买入时机</div>
+        <button class="bt-scale-btn" id="btScaleBtn" title="切换对数/线性坐标轴">对数</button>
+      </div>
+      <div class="bt-chart-wrap">
+        <canvas id="btChart"></canvas>
+      </div>
+      <div class="bt-legend">
+        <div class="bt-legend-item">
+          <div class="bt-legend-dot base-dot"></div>
+          <span>基础池</span>
+        </div>
+        <div class="bt-legend-item">
+          <div class="bt-legend-dot signal-dot"></div>
+          <span>信号池</span>
+        </div>
+        <div class="bt-legend-item">
+          <div class="bt-legend-dot extreme-dot"></div>
+          <span>极端池</span>
+        </div>
+        <div class="bt-legend-item" style="display:none">
+          <div class="bt-legend-dot" style="background:rgba(30,160,80,0.75)"></div>
+          <span>等权重DCA</span>
+        </div>
+        <div class="bt-legend-item">
+          <div class="bt-legend-dash"></div>
+          <span>平均成本线</span>
+        </div>
+        <div class="bt-legend-item">
+          <div class="bt-legend-star">★</div>
+          <span>牛市顶点</span>
+        </div>
+        <div class="bt-legend-note">同日期多池买入时圆点竖直堆叠：基础池（上）→ 信号池 → 极端池（下）</div>
+      </div>
+    </div>
+
+    <!-- 5. 汇总指标 -->
+    <div class="bt-stats-card">
+      <div class="bt-stats-title">三子弹策略 — 汇总指标</div>
+      <div class="bt-stats-grid">
+        <div class="bt-stat-cell">
+          <div class="bt-stat-label">均价 → 顶点涨幅</div>
+          <div class="bt-stat-val green" id="stPeakReturn">—</div>
+          <div class="bt-stat-sub" id="stPeakInfo">—</div>
+        </div>
+        <div class="bt-stat-cell">
+          <div class="bt-stat-label">年化收益（CAGR）</div>
+          <div class="bt-stat-val" id="stCagr">—</div>
+          <div class="bt-stat-sub" id="stYears">—</div>
+        </div>
+        <div class="bt-stat-cell">
+          <div class="bt-stat-label">最大建仓浮亏</div>
+          <div class="bt-stat-val red" id="stMaxDD">—</div>
+          <div class="bt-stat-sub">定投期间最大账面亏损</div>
+        </div>
+        <div class="bt-stat-cell">
+          <div class="bt-stat-label">买入次数</div>
+          <div class="bt-stat-val" id="stBuyCount">—</div>
+          <div class="bt-pool-breakdown" id="stPoolBreakdown"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. 对比表 -->
+    <div class="bt-compare-card">
+      <div class="bt-compare-title">策略对比</div>
+      <div class="bt-compare-header">
+        <div class="bt-compare-metric"></div>
+        <div class="bt-compare-strategy">三子弹</div>
+        <div class="bt-compare-dca" style="display:none">等权重定投(DCA)<span class="info-hint" data-tip="与基础池完全同步：同一天开始、同一天结束、同样的买入批次。唯一区别是每次买入金额 = 总预算 ÷ 批次数，不区分三个子弹池。代表「知道何时开始买，但不做信号筛选」的均摊策略。">?</span></div>
+      </div>
+      <div class="bt-compare-row">
+        <div class="bt-compare-metric">均价→顶点涨幅</div>
+        <div class="bt-compare-strategy" id="cmpStrPeak">—</div>
+        <div class="bt-compare-dca"      id="cmpDcaPeak" style="display:none">—</div>
+      </div>
+      <div class="bt-compare-row">
+        <div class="bt-compare-metric">年化收益</div>
+        <div class="bt-compare-strategy" id="cmpStrCagr">—</div>
+        <div class="bt-compare-dca"      id="cmpDcaCagr" style="display:none">—</div>
+      </div>
+      <div class="bt-compare-row">
+        <div class="bt-compare-metric">最大建仓浮亏</div>
+        <div class="bt-compare-strategy" id="cmpStrLoss">—</div>
+        <div class="bt-compare-dca"      id="cmpDcaLoss" style="display:none">—</div>
+      </div>
+      <div class="bt-compare-row">
+        <div class="bt-compare-metric">买入次数</div>
+        <div class="bt-compare-strategy" id="cmpStrBuys">—</div>
+        <div class="bt-compare-dca"      id="cmpDcaBuys" style="display:none">—</div>
+      </div>
+    </div>
+
+    <!-- 7. 买入记录 -->
+    <details class="bt-buys-card">
+      <summary class="bt-buys-summary">
+        <span class="bt-buys-title">买入记录（三子弹策略）</span>
+        <span class="bt-buys-count" id="btBuysCount"></span>
+      </summary>
+      <div id="btBuysList"></div>
+      <button class="bt-show-more" id="btShowMore" style="display:none">展示更多 ›</button>
+    </details>
+
+    <div class="bt-gap"></div>
+
+    <a href="install.html" class="cta-btn" id="btCta">
+      <span>保存策略 · 开始执行</span>
+      <span class="arrow">↗</span>
+    </a>
+
+  </div><!-- /bt-main -->
+
+</div><!-- /container -->
+
+<script src="js/utils.js"></script>
+<script src="js/signals.js"></script>
+<script src="js/persona.js"></script>
+<script src="js/strategy.js"></script>
+<script src="js/backtest.js"></script>
+<script>
+(function () {
+
+  /* ── 读取策略 ── */
+  const scores = readScores();
+  const strategy = generateStrategy(scores || { fn: 3, r: 3, kn: 3, fs: 3, eh: 3 });
+
+  let chart          = null;
+  let currentResult  = null;
+  let currentBullPeak = null;
+  let logScale       = true;   // 默认对数坐标（BTC跨度大）
+  let showAllBuys    = false;
+  const MAX_BUYS = 20;
+
+  /* ── 熊市注释 ── */
+  const BEAR_NOTES = {
+    '2018-01-01': {
+      title: '2018–20 熊市：BTC 从 $19497 跌至 $3200，跌幅 -84%',
+      desc: 'ICO 泡沫破裂叠加 2020 年 3 月新冠暴跌，考验定投心理韧性。随后牛市最高涨至约 $68000，涨幅约 21×。',
+    },
+    '2021-11-01': {
+      title: '2022 熊市：BTC 从 $67000 跌至 $16000，跌幅 -76%',
+      desc: 'Luna 崩盘、FTX 暴雷等黑天鹅叠加，极端信号在此期间多次触发。随后牛市最高涨至约 $100000，涨幅约 6×。',
+    },
+  };
+
+  /* ── 牛市顶点（数据集内最近可用日期）── */
+  const BULL_PEAKS = {
+    '2018-01-01': { date: '2021-11-07', label: '牛市顶 ~$68K' },
+    '2021-11-01': { date: '2024-12-08', label: '牛市顶 ~$100K' },
+  };
+
+  /* ── 渲染 ── */
+  function render(startDate, endDate) {
+    const result = runBacktest({
+      strategy,
+      startDate,
+      endDate: endDate || BTC_WEEKLY_DATA[BTC_WEEKLY_DATA.length - 1].date,
+      totalBudget: 10000,
+    });
+    if (!result) return;
+    currentResult = result;
+
+    const { summary, strategyPoints, strategyBuys, dcaBuys } = result;
+    const s = summary.strategy;
+    const d = summary.dca;
+
+    /* 熊市说明 */
+    const bearEl = document.getElementById('btBearNote');
+    const bear   = BEAR_NOTES[startDate];
+    if (bear && endDate) {
+      document.getElementById('btBearTitle').textContent = bear.title;
+      document.getElementById('btBearDesc').textContent  = bear.desc;
+      bearEl.style.display = 'block';
+    } else {
+      bearEl.style.display = 'none';
+    }
+
+    /* 汇总指标 */
+    const peakEl = document.getElementById('stPeakReturn');
+    peakEl.textContent = s.priceReturn != null ? formatPct(s.priceReturn) : '—';
+    peakEl.className   = 'bt-stat-val ' + ((s.priceReturn ?? 0) >= 0 ? 'green' : 'red');
+    document.getElementById('stPeakInfo').textContent = s.avgCost
+      ? '均价 $' + Math.round(s.avgCost).toLocaleString() + ' → $' + Math.round(s.peakPrice).toLocaleString() + '（' + s.peakDate.slice(0, 7) + '）'
+      : '—';
+    document.getElementById('stCagr').textContent   = formatPct(s.cagr);
+    document.getElementById('stYears').textContent  = summary.years + ' 年回测区间';
+    document.getElementById('stMaxDD').textContent  = formatPct(-s.maxLoss);
+    document.getElementById('stBuyCount').textContent = s.buyCount + ' 次';
+
+    /* 三池分布条 */
+    (function () {
+      const total = s.buyCount || 1;
+      const pools = [
+        { label: '基础', count: s.baseBuyCount,    cls: 'base'    },
+        { label: '信号', count: s.signalBuyCount,  cls: 'signal'  },
+        { label: '极端', count: s.extremeBuyCount, cls: 'extreme' },
+      ];
+      document.getElementById('stPoolBreakdown').innerHTML = pools.map(p => {
+        const pct = Math.round(p.count / total * 100);
+        return '<div class="bt-pool-row">' +
+          '<div class="bt-pool-label">' + p.label + '</div>' +
+          '<div class="bt-pool-bar-wrap"><div class="bt-pool-bar ' + p.cls + '" style="width:' + pct + '%"></div></div>' +
+          '<div class="bt-pool-count">' + p.count + '次</div>' +
+          '</div>';
+      }).join('');
+    })();
+
+    /* 对比表 */
+    document.getElementById('cmpStrPeak').textContent   = s.priceReturn != null ? formatPct(s.priceReturn) : '—';
+    document.getElementById('cmpDcaPeak').textContent   = d.priceReturn != null ? formatPct(d.priceReturn) : '—';
+    document.getElementById('cmpStrCagr').textContent   = formatPct(s.cagr);
+    document.getElementById('cmpDcaCagr').textContent   = formatPct(d.cagr);
+    document.getElementById('cmpStrLoss').textContent   = formatPct(-s.maxLoss);
+    document.getElementById('cmpDcaLoss').textContent   = formatPct(-d.maxLoss);
+    document.getElementById('cmpStrBuys').textContent   = s.buyCount + ' 次';
+    document.getElementById('cmpDcaBuys').textContent   = d.buyCount + ' 次';
+
+    currentBullPeak = BULL_PEAKS[startDate] || null;
+    renderChart(strategyPoints, strategyBuys, dcaBuys, currentBullPeak);
+    showAllBuys = false;
+    renderBuys(strategyBuys);
+  }
+
+  /* ── 图表 ── */
+  function renderChart(strategyPoints, strategyBuys, dcaBuys, bullPeak) {
+
+    // ── 构建 displayPoints：买入区全量 + "···" 间隔 + 顶点单点 ──
+    const buyDates = new Set(strategyBuys.map(b => b.date));
+    let lastBuyIdx = 0;
+    strategyPoints.forEach((p, i) => { if (buyDates.has(p.date)) lastBuyIdx = i; });
+    const bearEndIdx = Math.min(lastBuyIdx + 4, strategyPoints.length - 1);
+
+    const peakIdx = bullPeak
+      ? strategyPoints.findIndex(p => p.date === bullPeak.date)
+      : -1;
+
+    const useGap = peakIdx > bearEndIdx + 6;
+    let displayPoints;
+    if (useGap) {
+      displayPoints = [
+        ...strategyPoints.slice(0, bearEndIdx + 1),
+        null, null,
+        strategyPoints[peakIdx],
+      ];
+    } else {
+      displayPoints = strategyPoints;
+    }
+
+    const startMs = new Date(strategyPoints[0].date).getTime();
+    const labels = displayPoints.map((p, i) => {
+      if (i === 0) return '起点';
+      if (!p)      return '···';
+      const mo = Math.round((new Date(p.date).getTime() - startMs) / (30.44 * 86400000));
+      return '+' + mo + '月';
+    });
+
+    const priceVals   = displayPoints.map(p => p ? p.price   : null);
+    const avgCostVals = displayPoints.map(p => p ? p.avgCost : null);
+
+    const n = displayPoints.length;
+    const baseScatter    = new Array(n).fill(null);
+    const signalScatter  = new Array(n).fill(null);
+    const extremeScatter = new Array(n).fill(null);
+    const dcaScatter     = new Array(n).fill(null);
+    const peakScatter    = new Array(n).fill(null);
+    // 实际买入价（tooltip 使用，不受堆叠偏移影响）
+    const baseActualPx    = new Array(n).fill(null);
+    const signalActualPx  = new Array(n).fill(null);
+    const extremeActualPx = new Array(n).fill(null);
+
+    // DCA 买入点：固定偏移至价格上方 10%，与策略圆点错开
+    const dcaBuysSet = new Set(dcaBuys.map(b => b.date));
+    displayPoints.forEach((p, i) => {
+      if (!p || !dcaBuysSet.has(p.date)) return;
+      dcaScatter[i] = p.price * 1.10;
+    });
+
+    // 同日期多买入时竖直堆叠：基础池（上）→ 信号池（中）→ 极端池（下）
+    // 每层偏移实际价格 ±6%，使圆点在对数坐标下清晰分开
+    const dateBuysMap = new Map();
+    strategyBuys.forEach(b => {
+      if (!dateBuysMap.has(b.date)) dateBuysMap.set(b.date, []);
+      dateBuysMap.get(b.date).push(b);
+    });
+    function stackOrder(type) {
+      if (type === 'base')                             return 0; // 上
+      if (type === 'signal' || type === 'accel')       return 1; // 中
+      return 2;                                                   // quasi/extreme: 下
+    }
+    displayPoints.forEach((p, i) => {
+      if (!p) return;
+      const buys = dateBuysMap.get(p.date);
+      if (!buys) return;
+      const sorted = [...buys].sort((a, b) => stackOrder(a.type) - stackOrder(b.type));
+      const count  = sorted.length;
+      sorted.forEach((b, j) => {
+        // relPos: -1 = 最上（基础池），+1 = 最下（极端池）
+        const relPos = count === 1 ? 0 : (j / (count - 1) - 0.5) * 2;
+        const yVal   = p.price * (1 + (-relPos) * 0.06);
+        if (b.type === 'base') {
+          baseScatter[i]   = yVal;
+          baseActualPx[i]  = p.price;
+        } else if (b.type === 'signal' || b.type === 'accel') {
+          signalScatter[i]   = yVal;
+          signalActualPx[i]  = p.price;
+        } else {
+          extremeScatter[i]   = yVal;
+          extremeActualPx[i]  = p.price;
+        }
+      });
+    });
+
+    if (bullPeak) {
+      const pdIdx = useGap ? displayPoints.length - 1 : peakIdx;
+      if (pdIdx >= 0 && displayPoints[pdIdx]) {
+        peakScatter[pdIdx] = displayPoints[pdIdx].price;
+      }
+    }
+
+    function dotR(arr, r) { return arr.map(v => v !== null ? r : 0); }
+
+    if (chart) chart.destroy();
+
+    const ctx = document.getElementById('btChart').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'BTC 价格',
+            data: priceVals,
+            borderColor: '#8a8680',
+            backgroundColor: 'transparent',
+            borderWidth: 1.6,
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            tension: 0.2,
+            spanGaps: false,
+            order: 4,
+          },
+          {
+            label: '平均成本线',
+            data: avgCostVals,
+            borderColor: 'rgba(30,160,80,0.85)',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [5, 4],
+            pointRadius: 0,
+            tension: 0,
+            spanGaps: false,
+            order: 3,
+          },
+          {
+            label: '基础池',
+            data: baseScatter,
+            pointRadius: dotR(baseScatter, 5),
+            pointHoverRadius: dotR(baseScatter, 7),
+            showLine: false,
+            spanGaps: false,
+            backgroundColor: '#4a9fd4',
+            borderColor: '#fff',
+            borderWidth: 1.2,
+            order: 3,
+          },
+          {
+            label: '信号池',
+            data: signalScatter,
+            pointRadius: dotR(signalScatter, 6),
+            pointHoverRadius: dotR(signalScatter, 8),
+            showLine: false,
+            spanGaps: false,
+            backgroundColor: '#cc9010',
+            borderColor: '#fff',
+            borderWidth: 1.2,
+            order: 2,
+          },
+          {
+            label: '极端池',
+            data: extremeScatter,
+            pointRadius: dotR(extremeScatter, 7),
+            pointHoverRadius: dotR(extremeScatter, 9),
+            showLine: false,
+            spanGaps: false,
+            backgroundColor: '#e04040',
+            borderColor: '#fff',
+            borderWidth: 1.2,
+            order: 1,
+          },
+          {
+            label: '等权重DCA',
+            data: dcaScatter,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            showLine: false,
+            spanGaps: false,
+            backgroundColor: 'rgba(30,160,80,0.75)',
+            borderColor: '#fff',
+            borderWidth: 1,
+            order: 2,
+          },
+          {
+            label: bullPeak ? bullPeak.label : '牛市顶点',
+            data: peakScatter,
+            pointStyle: peakScatter.map(v => v !== null ? 'star' : 'circle'),
+            pointRadius: peakScatter.map(v => v !== null ? 14 : 0),
+            pointHoverRadius: peakScatter.map(v => v !== null ? 16 : 0),
+            showLine: false,
+            spanGaps: false,
+            backgroundColor: '#f5c518',
+            borderColor: '#c9970a',
+            borderWidth: 1.5,
+            order: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(28,28,30,0.92)',
+            titleFont: { size: 11, family: "'Noto Sans SC', sans-serif" },
+            bodyFont:  { size: 11, family: "'Noto Sans SC', sans-serif" },
+            padding: 10,
+            filter: item => item.parsed.y !== null && item.parsed.y !== undefined,
+            callbacks: {
+              title: items => {
+                if (!items.length || items[0].label === '···') return null;
+                return items[0].label;
+              },
+              label: ctx => {
+                if (ctx.parsed.y === null || ctx.parsed.y === undefined) return null;
+                const di = ctx.dataIndex;
+                const si = ctx.datasetIndex;
+                // 散点用实际买入价（y 值因堆叠偏移，不是真实价格）
+                let v = ctx.parsed.y;
+                if      (si === 2) v = baseActualPx[di]    ?? ctx.parsed.y;
+                else if (si === 3) v = signalActualPx[di]  ?? ctx.parsed.y;
+                else if (si === 4) v = extremeActualPx[di] ?? ctx.parsed.y;
+                const fmt = v >= 1000 ? '$' + (v / 1000).toFixed(1) + 'K' : '$' + Math.round(v);
+                const prefix = si === 5 ? '★ ' : '';
+                return prefix + ctx.dataset.label + ': ' + fmt;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: { color: '#aeaaa4', font: { size: 9 }, maxTicksLimit: 10, maxRotation: 0 },
+            grid: { display: false },
+            border: { display: false },
+          },
+          y: {
+            type: logScale ? 'logarithmic' : 'linear',
+            ticks: {
+              color: '#aeaaa4',
+              font: { size: 9 },
+              callback: v => '$' + (v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v),
+            },
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            border: { display: false },
+          },
+        },
+      },
+    });
+  }
+
+  /* ── 对数/线性切换 ── */
+  const scaleBtn = document.getElementById('btScaleBtn');
+  scaleBtn.classList.toggle('active', logScale);
+  scaleBtn.addEventListener('click', function () {
+    logScale = !logScale;
+    scaleBtn.textContent = logScale ? '对数' : '线性';
+    scaleBtn.classList.toggle('active', logScale);
+    if (currentResult) {
+      renderChart(currentResult.strategyPoints, currentResult.strategyBuys, currentResult.dcaBuys, currentBullPeak);
+    }
+  });
+
+  /* ── 买入记录 ── */
+  const TYPE_LABELS = {
+    base:    '基础池',
+    signal:  '信号池 · 普通',
+    accel:   '信号池 · 加速',
+    quasi:   '极端池 · 准极端',
+    extreme: '极端池 · 极端底部',
+  };
+
+  function renderBuys(buys) {
+    const container  = document.getElementById('btBuysList');
+    const countEl    = document.getElementById('btBuysCount');
+    const showMoreEl = document.getElementById('btShowMore');
+
+    countEl.textContent = '共 ' + buys.length + ' 次买入';
+
+    const displayed = showAllBuys ? buys : buys.slice(0, MAX_BUYS);
+    container.innerHTML = displayed.map(b =>
+      '<div class="bt-buy-row">' +
+        '<div class="bt-buy-dot ' + b.type + '"></div>' +
+        '<div class="bt-buy-date">' + b.date + '</div>' +
+        '<div class="bt-buy-type">' + (TYPE_LABELS[b.type] || b.type) + '</div>' +
+        '<div>' +
+          '<div class="bt-buy-amount">$' + Math.round(b.amount).toLocaleString() + '</div>' +
+          '<div class="bt-buy-price">@$' + Math.round(b.price).toLocaleString() + '</div>' +
+        '</div>' +
+      '</div>'
+    ).join('');
+
+    if (!showAllBuys && buys.length > MAX_BUYS) {
+      showMoreEl.style.display = 'block';
+      showMoreEl.textContent = '展示更多（还有 ' + (buys.length - MAX_BUYS) + ' 条）›';
+    } else {
+      showMoreEl.style.display = 'none';
+    }
+  }
+
+  document.getElementById('btShowMore').addEventListener('click', function () {
+    showAllBuys = true;
+    if (currentResult) renderBuys(currentResult.strategyBuys);
+  });
+
+  /* ── 时间范围按钮 ── */
+  const rangeButtons = document.querySelectorAll('.bt-range-btn');
+
+  function activateRange(btn) {
+    rangeButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    showAllBuys = false;
+    render(btn.dataset.start || '2013-01-01', btn.dataset.end || null);
+  }
+
+  rangeButtons.forEach(btn => btn.addEventListener('click', () => activateRange(btn)));
+
+  /* ── 初始化 ── */
+  document.getElementById('btLoading').style.display = 'none';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.getElementById('btMain').classList.add('show');
+    activateRange(rangeButtons[0]);
+  }));
+
+})();
+</script>
+
+</body>
+</html>

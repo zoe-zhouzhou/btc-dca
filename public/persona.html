@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BTC 智能定投 — 你的投资画像</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="css/persona.css" />
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header" style="display:flex;align-items:center;justify-content:space-between;height:52px">
+    <a href="index.html" class="logo" style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#1c1c1e;text-decoration:none;letter-spacing:-0.1px">
+      <div class="logo-icon" style="width:26px;height:26px;border-radius:7px;background:#1c1c1e;color:#f0ede8;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">₿</div>
+      BTC 智能定投
+    </a>
+    <nav class="nav" style="display:flex;background:#e7e3db;border-radius:6px;padding:3px;gap:2px;flex-shrink:0">
+      <a href="index.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">看板</a>
+      <a href="questionnaire.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">问卷</a>
+      <a href="persona.html" class="active" style="font-size:12px;font-weight:500;color:#1c1c1e;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap;background:#f0ede8;box-shadow:0 1px 3px rgba(0,0,0,.08)">画像</a>
+      <a href="strategy.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">策略</a>
+      <a href="install.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">Skill</a>
+    </nav>
+  </header>
+
+  <!-- Error state -->
+  <div class="p-error" id="pError">
+    <div class="p-error-icon">?</div>
+    <div class="p-error-title">未找到问卷结果</div>
+    <div class="p-error-desc">请先完成投资者问卷，才能查看你的投资画像。</div>
+    <a href="questionnaire.html" class="cta-btn" style="margin-top:0">
+      <span>前往完成问卷</span>
+      <span class="arrow">↗</span>
+    </a>
+  </div>
+
+  <!-- Main content -->
+  <div class="p-main" id="pMain">
+
+    <!-- 1. Hero: avatar + name + tags -->
+    <div class="p-hero">
+      <div class="p-avatar">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="11" r="5.5" fill="#4A7FC1" opacity="0.85"/>
+          <path d="M5 28c0-6.075 4.925-11 11-11s11 4.925 11 11" stroke="#4A7FC1" stroke-width="2.2" stroke-linecap="round" opacity="0.85"/>
+        </svg>
+      </div>
+      <div class="p-hero-info">
+        <div class="p-hero-name" id="pName">—</div>
+        <div class="p-hero-tags" id="pTags"></div>
+      </div>
+    </div>
+
+    <!-- 2. 你是谁 -->
+    <div class="p-section">
+      <div class="p-section-label">你是谁</div>
+      <div class="p-who-card">
+        <div class="p-who-text" id="pWho">—</div>
+      </div>
+    </div>
+
+    <!-- 3. 五维度画像 -->
+    <div class="p-section">
+      <div class="p-section-label">五维度画像</div>
+      <div class="p-dims-card">
+        <div class="p-dims-grid" id="pDimsGrid">
+          <!-- fn -->
+          <div class="p-dim-item" id="dimItemFn">
+            <div class="p-dim-key">资金性质</div>
+            <div class="p-dim-track"><div class="p-dim-fill" id="dimFillFn"></div></div>
+            <div class="p-dim-label" id="dimLabelFn">—</div>
+          </div>
+          <!-- r -->
+          <div class="p-dim-item" id="dimItemR">
+            <div class="p-dim-key">心理韧性</div>
+            <div class="p-dim-track"><div class="p-dim-fill" id="dimFillR"></div></div>
+            <div class="p-dim-label" id="dimLabelR">—</div>
+          </div>
+          <!-- kn -->
+          <div class="p-dim-item" id="dimItemKn">
+            <div class="p-dim-key">认知深度</div>
+            <div class="p-dim-track"><div class="p-dim-fill" id="dimFillKn"></div></div>
+            <div class="p-dim-label" id="dimLabelKn">—</div>
+          </div>
+          <!-- fs -->
+          <div class="p-dim-item" id="dimItemFs">
+            <div class="p-dim-key">资金结构</div>
+            <div class="p-dim-track"><div class="p-dim-fill" id="dimFillFs"></div></div>
+            <div class="p-dim-label" id="dimLabelFs">—</div>
+          </div>
+          <!-- eh: full width -->
+          <div class="p-dim-item span-full" id="dimItemEh">
+            <div class="p-dim-key">退出 horizon</div>
+            <div class="p-dim-track"><div class="p-dim-fill" id="dimFillEh"></div></div>
+            <div class="p-dim-label" id="dimLabelEh">—</div>
+            <div class="p-dim-note"  id="dimNoteEh"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 你的优势 -->
+    <div class="p-section">
+      <div class="p-section-label">你的优势</div>
+      <div class="p-bullet-list" id="pStrengths"></div>
+    </div>
+
+    <!-- 5. 你最容易在哪里犯错 -->
+    <div class="p-section">
+      <div class="p-section-label">你最容易在哪里犯错</div>
+      <div class="p-bullet-list" id="pBlindspots"></div>
+    </div>
+
+    <!-- 6. Tension card (shown only if tension exists) -->
+    <div class="p-tension-card" id="pTensionCard" style="display:none">
+      <div class="p-tension-title">你身上有一个内在张力需要注意</div>
+      <div class="p-tension-text" id="pTensionText"></div>
+    </div>
+
+    <div class="p-gap"></div>
+
+    <!-- 7. CTA -->
+    <a href="strategy.html" class="cta-btn" id="pCtaBtn">
+      <span>生成我的定投策略</span>
+      <span class="arrow">↗</span>
+    </a>
+
+    <!-- 8. Secondary: Declaration + Claude API -->
+    <div class="p-decl-section">
+
+      <div class="p-decl" id="pDecl">
+        <div class="p-decl-header">
+          <div class="p-decl-label">定投宣言</div>
+          <button class="p-decl-edit-btn" id="pDeclEditBtn">编辑</button>
+        </div>
+        <span class="p-decl-text" id="pDeclText"></span>
+        <textarea class="p-decl-textarea" id="pDeclTextarea" rows="10"></textarea>
+        <button class="p-decl-save-btn" id="pDeclSaveBtn">保存宣言</button>
+      </div>
+
+      <details class="p-claude" id="pClaudeSection">
+        <summary>
+          <span class="p-claude-title">用 Claude AI 生成个性化宣言</span>
+          <span class="p-claude-badge">可选</span>
+        </summary>
+        <div class="p-claude-body">
+          <p class="p-claude-desc">
+            输入你自己的 Claude API Key，AI 将根据你的具体答案生成专属宣言。<br>
+            Key 仅在本地使用，不经过本产品服务器，费用由你的账户承担（约 $0.01/次）。
+          </p>
+          <div class="p-claude-input-row">
+            <input type="password" class="p-claude-key-input" id="pClaudeKey" placeholder="sk-ant-..." />
+            <button class="p-claude-gen-btn" id="pClaudeGenBtn">生成</button>
+          </div>
+          <div class="p-claude-status" id="pClaudeStatus"></div>
+        </div>
+      </details>
+
+    </div><!-- /p-decl-section -->
+
+  </div><!-- /p-main -->
+
+</div><!-- /container -->
+
+<script src="js/persona.js"></script>
+<script>
+(function () {
+
+  /* ── 1. 读取得分 ── */
+  const scores = readScores();
+
+  if (!scores) {
+    document.getElementById('pError').classList.add('show');
+    return;
+  }
+
+  /* ── 2. 匹配画像 ── */
+  const key     = matchPersona(scores);
+  const persona = PERSONAS[key];
+
+  localStorage.setItem('btc_dca_persona', key);
+
+  /* ── 3. Hero ── */
+  document.getElementById('pName').textContent = persona.name;
+
+  /* Tag chips from dim semantic labels */
+  const tags    = getDimTags(scores);
+  const tagsEl  = document.getElementById('pTags');
+  tagsEl.innerHTML = tags.map(t =>
+    '<span class="p-hero-chip">' + t + '</span>'
+  ).join('');
+
+  /* ── 4. 你是谁 ── */
+  document.getElementById('pWho').textContent = persona.who;
+
+  /* ── 5. 五维度画像 ── */
+  function renderDim(fillId, labelId, noteId, key, score) {
+    const info = dimInfo(key, score);
+    const fill = document.getElementById(fillId);
+    const labelEl = document.getElementById(labelId);
+
+    fill.style.background = info.barColor;
+    labelEl.textContent = info.label + ' · ' + (score * 2) + '/10';
+
+    if (noteId && info.note) {
+      document.getElementById(noteId).textContent = info.note;
+    }
+
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        fill.style.width = ((score / 5) * 100) + '%';
+      });
+    });
+  }
+
+  renderDim('dimFillFn', 'dimLabelFn', null,       'fn', scores.fn);
+  renderDim('dimFillR',  'dimLabelR',  null,       'r',  scores.r);
+  renderDim('dimFillKn', 'dimLabelKn', null,       'kn', scores.kn);
+  renderDim('dimFillFs', 'dimLabelFs', null,       'fs', scores.fs);
+  renderDim('dimFillEh', 'dimLabelEh', 'dimNoteEh','eh', scores.eh);
+
+  /* ── 6. 优势 ── */
+  const strengthsEl = document.getElementById('pStrengths');
+  strengthsEl.innerHTML = persona.strengths.map(s =>
+    '<div class="p-bullet-item">' +
+      '<div class="p-bullet-dot green"></div>' +
+      '<span>' + s + '</span>' +
+    '</div>'
+  ).join('');
+
+  /* ── 7. 犯错盲区 ── */
+  const blindspotsEl = document.getElementById('pBlindspots');
+  const bsItems = persona.blindspots || (persona.blindspot ? [persona.blindspot] : []);
+  blindspotsEl.innerHTML = bsItems.map(s =>
+    '<div class="p-bullet-item">' +
+      '<div class="p-bullet-dot amber"></div>' +
+      '<span>' + s + '</span>' +
+    '</div>'
+  ).join('');
+
+  /* ── 8. 内在张力 ── */
+  if (persona.tension) {
+    const tensionCard = document.getElementById('pTensionCard');
+    document.getElementById('pTensionText').textContent = persona.tension;
+    tensionCard.style.display = 'block';
+  }
+
+  /* ── 9. 宣言 ── */
+  const DECL_KEY       = 'btc_dca_declaration_' + key;
+  const savedDecl      = localStorage.getItem(DECL_KEY) || persona.declaration;
+  const declTextEl     = document.getElementById('pDeclText');
+  const declTextareaEl = document.getElementById('pDeclTextarea');
+  const declEl         = document.getElementById('pDecl');
+  const editBtn        = document.getElementById('pDeclEditBtn');
+  const saveBtn        = document.getElementById('pDeclSaveBtn');
+
+  declTextEl.textContent  = savedDecl;
+  declTextareaEl.value    = savedDecl;
+
+  editBtn.addEventListener('click', function () {
+    if (declEl.classList.contains('editing')) {
+      declTextareaEl.value = declTextEl.textContent;
+      declEl.classList.remove('editing');
+      editBtn.textContent = '编辑';
+    } else {
+      declEl.classList.add('editing');
+      editBtn.textContent = '取消';
+      declTextareaEl.focus();
+    }
+  });
+
+  saveBtn.addEventListener('click', function () {
+    const newDecl = declTextareaEl.value.trim();
+    if (!newDecl) return;
+    localStorage.setItem(DECL_KEY, newDecl);
+    declTextEl.textContent = newDecl;
+    declEl.classList.remove('editing');
+    editBtn.textContent = '编辑';
+  });
+
+  /* ── 10. Claude API ── */
+  const claudeGenBtn   = document.getElementById('pClaudeGenBtn');
+  const claudeKeyInput = document.getElementById('pClaudeKey');
+  const claudeStatusEl = document.getElementById('pClaudeStatus');
+
+  claudeGenBtn.addEventListener('click', async function () {
+    const apiKey = claudeKeyInput.value.trim();
+    if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+      claudeStatusEl.className = 'p-claude-status error';
+      claudeStatusEl.textContent = '请输入有效的 Anthropic API Key（以 sk-ant- 开头）';
+      return;
+    }
+
+    claudeGenBtn.disabled = true;
+    claudeStatusEl.className = 'p-claude-status';
+    claudeStatusEl.textContent = '正在生成个性化宣言…';
+
+    const prompt = [
+      '你是一个帮助用户进行 BTC 定投的工具。',
+      '用户的投资画像是"' + persona.name + '"（' + persona.en + '），特征：' + persona.tag + '。',
+      '请为这位用户生成一份个性化的"定投宣言"，结构如下：',
+      '[画像名] 的定投宣言',
+      '',
+      '我选择定投 BTC，不是因为……而是因为……（结合用户特征）',
+      '',
+      '当账户亏损 50% 的那一天，我会告诉自己……（结合用户的心理特征）',
+      '',
+      '我给一年后的自己留一句话：……（温暖有力量的话）',
+      '',
+      '要求：语言简洁有力，有情感共鸣，200字以内，不要加任何额外说明。',
+    ].join('\n');
+
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model:      'claude-haiku-4-5-20251001',
+          max_tokens: 512,
+          messages:   [{ role: 'user', content: prompt }],
+        }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err?.error?.message || resp.statusText);
+      }
+
+      const data      = await resp.json();
+      const generated = data?.content?.[0]?.text?.trim();
+      if (!generated) throw new Error('返回内容为空');
+
+      localStorage.setItem(DECL_KEY, generated);
+      declTextEl.textContent  = generated;
+      declTextareaEl.value    = generated;
+      declEl.classList.remove('editing');
+      editBtn.textContent = '编辑';
+
+      claudeStatusEl.className = 'p-claude-status success';
+      claudeStatusEl.textContent = '宣言已生成并保存';
+    } catch (e) {
+      claudeStatusEl.className = 'p-claude-status error';
+      claudeStatusEl.textContent = '生成失败：' + e.message;
+    } finally {
+      claudeGenBtn.disabled = false;
+    }
+  });
+
+  /* ── 11. CTA 链接 ── */
+  const ctaBtn = document.getElementById('pCtaBtn');
+  ctaBtn.href = 'strategy.html?persona=' + key
+    + '&fn=' + scores.fn
+    + '&r='  + scores.r
+    + '&kn=' + scores.kn
+    + '&fs=' + scores.fs
+    + '&eh=' + scores.eh;
+
+  /* ── 12. 显示内容 ── */
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      document.getElementById('pMain').classList.add('show');
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>

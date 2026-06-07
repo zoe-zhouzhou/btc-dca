@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BTC 智能定投 — 你的定投策略</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="css/strategy.css" />
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header" style="display:flex;align-items:center;justify-content:space-between;height:52px">
+    <a href="index.html" class="logo" style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#1c1c1e;text-decoration:none;letter-spacing:-0.1px">
+      <div class="logo-icon" style="width:26px;height:26px;border-radius:7px;background:#1c1c1e;color:#f0ede8;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">₿</div>
+      BTC 智能定投
+    </a>
+    <nav class="nav" style="display:flex;background:#e7e3db;border-radius:6px;padding:3px;gap:2px;flex-shrink:0">
+      <a href="index.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">看板</a>
+      <a href="questionnaire.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">问卷</a>
+      <a href="persona.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">画像</a>
+      <a href="strategy.html" class="active" style="font-size:12px;font-weight:500;color:#1c1c1e;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap;background:#f0ede8;box-shadow:0 1px 3px rgba(0,0,0,.08)">策略</a>
+      <a href="install.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">Skill</a>
+    </nav>
+  </header>
+
+  <!-- Stale / degraded alert -->
+  <div class="alert" id="alertBanner">
+    <strong>数据提示：</strong><span id="alertMsg"></span>
+  </div>
+
+  <!-- Skeleton loading -->
+  <div id="sLoading">
+    <div class="sk-tall sk"></div>
+    <div class="sk-short sk"></div>
+    <div class="sk-tall sk"></div>
+  </div>
+
+  <!-- Main -->
+  <div class="s-main" id="sMain">
+
+    <!-- 画像 chip -->
+    <div class="s-persona-chip">
+      <div class="s-persona-pre">画像</div>
+      <div class="s-persona-name" id="sPersonaName">—</div>
+      <div class="s-persona-tag"  id="sPersonaTag">—</div>
+    </div>
+
+    <!-- ① 定投总预算 -->
+    <div class="s-section">
+      <div class="s-section-label">一、设置定投总预算</div>
+      <div class="s-budget-card" id="sBudgetCard">
+
+        <!-- 未设置：输入态 -->
+        <div id="sBudgetInput">
+          <div class="s-budget-row">
+            <span class="s-budget-symbol">¥</span>
+            <input
+              type="number"
+              class="s-budget-input"
+              id="sBudgetField"
+              placeholder="输入总预算金额"
+              min="100"
+              step="100"
+            />
+            <button class="s-budget-confirm" id="sBudgetConfirm">确认</button>
+          </div>
+          <div class="s-budget-hint">预算仅保存在本机，不会上传到任何服务器</div>
+        </div>
+
+        <!-- 已设置：展示态 -->
+        <div id="sBudgetDisplay" style="display:none">
+          <div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.03em;margin-bottom:6px">定投总预算</div>
+          <div class="s-budget-display">
+            <div class="s-budget-amount">¥<span id="sBudgetAmountText">—</span></div>
+            <span class="s-budget-change" id="sBudgetEditBtn">修改</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ② 当前市场状态 -->
+    <div class="s-section">
+      <div class="s-section-label">二、当前市场状态</div>
+      <div class="s-market-card">
+        <div class="s-score-row">
+          <div class="s-score-num sk" id="sCycleScore">—</div>
+          <div class="s-score-right">
+            <div class="s-score-phase sk" id="sScorePhase">——</div>
+            <div class="s-score-desc" id="sScoreDesc"></div>
+          </div>
+        </div>
+        <div class="s-score-track">
+          <div class="s-score-fill" id="sScoreFill" style="width:0%"></div>
+        </div>
+        <div class="s-score-axis">
+          <span>极度低估</span>
+          <span>中性</span>
+          <span>极度高估</span>
+        </div>
+        <!-- 历史参考窗口（仅低估区显示） -->
+        <div class="s-history-row" id="sHistoryRow" style="display:none">
+          <div class="s-history-label">历史参考窗口</div>
+          <div class="s-history-body">
+            <div class="s-history-range" id="sHistoryRange">—</div>
+            <div class="s-history-context" id="sHistoryContext"></div>
+          </div>
+        </div>
+        <!-- 低估区已持续（仅低估区且有 undervalued_since 时显示） -->
+        <div class="s-bear-duration-row" id="sBearDurationRow" style="display:none">
+          <div class="s-history-label">低估区已持续</div>
+          <div class="s-history-body">
+            <div class="s-history-range" id="sBearDurationRange">—</div>
+            <div class="s-history-context" id="sBearDurationContext"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 现在应该入场吗 -->
+    <div class="s-section">
+      <div class="s-section-label">三、现在应该入场吗？</div>
+      <div class="s-timing-card">
+        <div class="s-timing-verdict">
+          <div class="s-timing-dot sk" id="sTimingDot"></div>
+          <div class="s-timing-label sk" id="sTimingLabel">——</div>
+        </div>
+        <div class="s-timing-reason" id="sTimingReason"></div>
+      </div>
+    </div>
+
+    <div class="s-gap"></div>
+
+    <!-- ④ 子弹分配 -->
+    <div class="s-section">
+      <div class="s-section-label">四、你的子弹分配</div>
+      <div class="s-bullets-list">
+
+        <div class="s-bullet-card base">
+          <div class="s-bullet-header">
+            <div class="s-bullet-name">基础池 — 持续建仓</div>
+            <div class="s-bullet-pct base" id="bBasePct">—%</div>
+          </div>
+          <div class="s-bullet-amount" id="bBaseAmount"><span class="unit">¥</span>—</div>
+          <div class="s-bullet-exec" id="bBaseExec">—</div>
+        </div>
+
+        <div class="s-bullet-card signal">
+          <div class="s-bullet-header">
+            <div class="s-bullet-name">信号池 — 普通信号 + 加速信号</div>
+            <div class="s-bullet-pct signal" id="bSignalPct">—%</div>
+          </div>
+          <div class="s-bullet-amount" id="bSignalAmount"><span class="unit">¥</span>—</div>
+          <div class="s-bullet-exec" id="bSignalExec">—</div>
+        </div>
+
+        <div class="s-bullet-card extreme">
+          <div class="s-bullet-header">
+            <div class="s-bullet-name">极端池 — 准极端信号 + 极端底部信号</div>
+            <div class="s-bullet-pct extreme" id="bExtremePct">—%</div>
+          </div>
+          <div class="s-bullet-amount" id="bExtremeAmount"><span class="unit">¥</span>—</div>
+          <div class="s-bullet-exec" id="bExtremeExec">—</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ⑤ 信号触发规则（三池分组） -->
+    <div class="s-section">
+      <div class="s-section-label">五、信号触发规则</div>
+      <div id="sSignalCards"></div>
+    </div>
+
+    <div class="s-gap"></div>
+
+    <!-- ⑥ 深度亏损时 -->
+    <div class="s-section">
+      <div class="s-section-label">六、账面大幅亏损时</div>
+      <div class="s-loss-list" id="sLossCards"></div>
+    </div>
+
+    <div class="s-gap"></div>
+
+    <!-- CTA 区：回测验证 + 安装 Skill -->
+    <a href="backtest.html" class="cta-btn cta-secondary">
+      <span>查看历史回测验证</span>
+      <span class="arrow">↗</span>
+    </a>
+    <a href="install.html" class="cta-btn" style="margin-top:10px" id="sInstallBtn">
+      <span>安装 Skill，开始自动提醒</span>
+      <span class="arrow">↗</span>
+    </a>
+
+  </div><!-- /s-main -->
+
+</div><!-- /container -->
+
+<script src="js/utils.js"></script>
+<script src="js/signals.js"></script>
+<script src="js/persona.js"></script>
+<script src="js/strategy.js"></script>
+<script>
+(function () {
+
+  /* ── 读取画像与得分 ── */
+  const scores = readScores();
+  if (!scores) { location.href = 'questionnaire.html'; return; }
+
+  const params     = new URLSearchParams(location.search);
+  const personaKey = params.get('persona') || localStorage.getItem('btc_dca_persona') || matchPersona(scores);
+  const persona    = PERSONAS[personaKey] || PERSONAS[matchPersona(scores)];
+  const strategy   = generateStrategy(scores);
+
+  /* ── 安装 Skill CTA：本地编码导入码，直接跳转 ── */
+  document.getElementById('sInstallBtn').addEventListener('click', function (e) {
+    e.preventDefault();
+    var code = encodeImportCode(personaKey, strategy);
+    location.href = 'install.html?code=' + code;
+  });
+
+  /* ── 画像 chip ── */
+  document.getElementById('sPersonaName').textContent = persona.name;
+  document.getElementById('sPersonaTag').textContent  = persona.tag;
+
+  /* ── 子弹比例（静态） ── */
+  document.getElementById('bBasePct').textContent    = strategy.base_bullet_pct    + '%';
+  document.getElementById('bSignalPct').textContent  = strategy.signal_bullet_pct  + '%';
+  document.getElementById('bExtremePct').textContent = strategy.extreme_bullet_pct + '%';
+
+  /* ─────────────────────────────────────
+     预算逻辑
+  ───────────────────────────────────────── */
+  const BUDGET_KEY = 'btc_dca_budget';
+  var _signalData  = null;   /* 缓存信号数据，预算修改后重渲染信号区 */
+
+  function getBudget() {
+    const v = parseFloat(localStorage.getItem(BUDGET_KEY));
+    return isNaN(v) || v <= 0 ? null : v;
+  }
+
+  function saveBudget(v) { localStorage.setItem(BUDGET_KEY, String(v)); }
+
+  function renderBulletAmounts(budget) {
+    const amounts   = calcAmounts(strategy, budget);
+    const baseExec  = calcBaseExec(amounts, strategy);
+    const freq      = dcaFreqLabel(strategy.dca_frequency);
+
+    /* 基础池 */
+    const timesPerYear = getTimesPerYear(strategy);
+    document.getElementById('bBaseAmount').innerHTML =
+      '<span class="unit">¥</span>' + formatBudget(amounts.base);
+    document.getElementById('bBaseExec').textContent =
+      '周期分 ≤ ' + strategy.base_pool_entry_score + ' 时触发，'
+      + freq + '买入一次，每次约 ¥' + formatBudget(baseExec) + '，共 ' + getTimesPerYear(strategy) + ' 批（8 个月窗口）';
+
+    /* 信号池 */
+    const normalExec = calcSignalExec(amounts, 'normal');
+    const accelExec  = calcSignalExec(amounts, 'accel');
+    document.getElementById('bSignalAmount').innerHTML =
+      '<span class="unit">¥</span>' + formatBudget(amounts.signal);
+    document.getElementById('bSignalExec').textContent =
+      '普通信号触发时，一次买入约 ¥' + formatBudget(normalExec.amount) + '（信号池的 6%）；'
+      + '加速信号触发时，一次买入约 ¥' + formatBudget(accelExec.amount) + '（信号池的 10%）。'
+      + '两者共用信号池，触发后进入冷静期，到期后可再次触发。';
+
+    /* 极端池 */
+    const quasiExec   = calcSignalExec(amounts, 'quasi');
+    const extremeExec = calcSignalExec(amounts, 'extreme');
+    document.getElementById('bExtremeAmount').innerHTML =
+      '<span class="unit">¥</span>' + formatBudget(amounts.extreme);
+    document.getElementById('bExtremeExec').textContent =
+      '准极端信号触发时，一次买入约 ¥' + formatBudget(quasiExec.amount) + '（极端池的 12%）；'
+      + '极端底部信号触发时，一次买入约 ¥' + formatBudget(extremeExec.amount) + '（极端池的 20%）。'
+      + '两者共用极端池，7 天冷静期后若信号持续可再次触发。';
+  }
+
+  function renderNoBudget() {
+    const ph = '<span style="font-size:13px;color:var(--t3);font-style:italic">请先填写总预算</span>';
+    ['bBaseAmount', 'bSignalAmount', 'bExtremeAmount'].forEach(function (id) {
+      document.getElementById(id).innerHTML = ph;
+    });
+    document.getElementById('bBaseExec').textContent =
+      '周期分 ≤ ' + strategy.base_pool_entry_score + ' 时触发，'
+      + dcaFreqLabel(strategy.dca_frequency) + '买入一次，共 ' + getTimesPerYear(strategy) + ' 批（8 个月窗口）';
+    document.getElementById('bSignalExec').textContent =
+      '普通信号触发时，一次买入信号池的 6%；加速信号触发时，一次买入信号池的 10%。两者共用信号池，触发后进入冷静期，到期后可再次触发。';
+    document.getElementById('bExtremeExec').textContent =
+      '准极端信号触发时，单次动用极端池的 12%；极端底部信号触发时，单次动用极端池的 20%。两者共用极端池，7 天冷静期后若信号持续可再次触发。';
+  }
+
+  function showBudgetDisplay(budget) {
+    document.getElementById('sBudgetInput').style.display   = 'none';
+    document.getElementById('sBudgetDisplay').style.display = 'block';
+    document.getElementById('sBudgetAmountText').textContent = formatBudget(budget);
+    renderBulletAmounts(budget);
+    if (_signalData) renderSignalSection(_signalData, budget);
+  }
+
+  function showBudgetForm() {
+    document.getElementById('sBudgetInput').style.display   = 'block';
+    document.getElementById('sBudgetDisplay').style.display = 'none';
+    document.getElementById('sBudgetField').focus();
+    renderNoBudget();
+    if (_signalData) renderSignalSection(_signalData, null);
+  }
+
+  document.getElementById('sBudgetConfirm').addEventListener('click', function () {
+    const v = parseFloat(document.getElementById('sBudgetField').value);
+    if (!v || v < 100) { document.getElementById('sBudgetField').focus(); return; }
+    saveBudget(v);
+    showBudgetDisplay(v);
+  });
+
+  document.getElementById('sBudgetField').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('sBudgetConfirm').click();
+  });
+
+  document.getElementById('sBudgetEditBtn').addEventListener('click', function () {
+    const current = getBudget();
+    if (current) document.getElementById('sBudgetField').value = current;
+    showBudgetForm();
+  });
+
+  const initBudget = getBudget();
+  if (initBudget) {
+    showBudgetDisplay(initBudget);
+  } else {
+    renderNoBudget();
+  }
+
+  /* ─────────────────────────────────────
+     亏损锚定（静态渲染）
+  ───────────────────────────────────────── */
+  var lossContainer = document.getElementById('sLossCards');
+  LOSS_ANCHORS.forEach(function (anchor) {
+    lossContainer.insertAdjacentHTML('beforeend',
+      '<details class="s-loss-row">' +
+        '<summary class="s-loss-summary">' +
+          '<span class="s-loss-badge ' + anchor.color + '">' + anchor.threshold + '</span>' +
+          '<span class="s-loss-title">' + anchor.title + '</span>' +
+        '</summary>' +
+        '<div class="s-loss-desc">' + anchor.desc + '</div>' +
+      '</details>'
+    );
+  });
+
+  /* ─────────────────────────────────────
+     渲染单个信号卡（供 renderSignalSection 调用）
+  ───────────────────────────────────────── */
+  function renderSignalCard(lvl, activeKey, amounts, strategy) {
+    var metCount  = lvl.conditions.filter(function (c) { return c.met; }).length;
+    var isActive  = lvl.key === activeKey;
+    var exec      = amounts ? calcSignalExec(amounts, lvl.key) : null;
+    var cdDays    = strategy[lvl.cooldownKey];
+    var poolLabel = (lvl.key === 'normal' || lvl.key === 'accel') ? '信号池' : '极端池';
+
+    /* 执行金额描述（下拉框内） */
+    var execText = exec
+      ? '¥' + formatBudget(exec.amount) + '（' + lvl.actionPct + '）'
+      : '填写预算后显示';
+
+    /* badge 文字（折叠时可见） */
+    var badgeText = exec ? '约 ¥' + formatBudget(exec.amount) : lvl.actionPct;
+
+    var condHtml = lvl.conditions.map(function (c) {
+      return '<div class="cond-item">' +
+        '<div class="cond-icon ' + (c.met ? 'met' : 'unmet') + '">' + (c.met ? '✓' : '○') + '</div>' +
+        '<span class="cond-text' + (c.met ? '' : ' unmet') + '">' + c.text + '</span>' +
+        '<span class="cond-value">' + c.value + '</span>' +
+      '</div>';
+    }).join('');
+
+    var outlineClass = isActive
+      ? 'signal-card' + (lvl.color !== 'green' ? ' s-signal-active ' + lvl.color + '-outline' : ' s-signal-active')
+      : 'signal-card';
+
+    return '<details class="' + outlineClass + '"' + (isActive ? ' open' : '') + '>' +
+      '<summary>' +
+        '<div class="signal-left">' +
+          '<div class="sig-dot ' + (isActive ? lvl.color : '') + '"></div>' +
+          '<div>' +
+            '<div class="sig-name">' + lvl.label + '</div>' +
+            '<div class="sig-desc">' + metCount + ' / ' + lvl.conditions.length + ' 项条件当前满足</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="sig-right">' +
+          '<span class="sig-badge ' + (isActive ? lvl.color : '') + '">' + badgeText + '</span>' +
+          '<span class="sig-chevron">›</span>' +
+        '</div>' +
+      '</summary>' +
+      '<div class="signal-conditions">' + condHtml + '</div>' +
+      '<div class="sig-note">' + lvl.note + '</div>' +
+      '<div class="s-signal-exec">' +
+        '<span class="s-signal-exec-label">触发时执行（来自' + poolLabel + '）</span>' +
+        '<span class="s-signal-exec-amount" id="exec-amount-' + lvl.key + '">' + execText + '</span>' +
+      '</div>' +
+      '<div class="s-cooldown-row">' +
+        '<div class="s-cooldown-left">' +
+          '<div class="s-cooldown-label">冷静期 ' + cdDays + ' 天</div>' +
+          '<div class="s-cooldown-why">' + lvl.cooldownWhy + '</div>' +
+        '</div>' +
+        '<div class="s-cooldown-days">' + cdDays + ' 天</div>' +
+      '</div>' +
+    '</details>';
+  }
+
+  /* ─────────────────────────────────────
+     渲染三池分组信号区
+  ───────────────────────────────────────── */
+  function renderSignalSection(data, budget) {
+    var container = document.getElementById('sSignalCards');
+    container.innerHTML = '';
+
+    var levels    = evaluateAllSignalLevels(data);
+    var activeKey = detectSignalLevel(data).level;
+    var amounts   = budget ? calcAmounts(strategy, budget) : null;
+
+    /* ── 基础池 ── */
+    var baseAmount  = amounts ? amounts.base    : null;
+    var baseExecAmt = amounts ? calcBaseExec(amounts, strategy) : null;
+    var freq        = dcaFreqLabel(strategy.dca_frequency);
+
+    container.insertAdjacentHTML('beforeend',
+      '<div class="s-pool-group">' +
+        '<div class="s-pool-group-header base">' +
+          '<span class="s-pool-group-name base">基础池</span>' +
+          '<span class="s-pool-group-pct">' + strategy.base_bullet_pct + '%</span>' +
+          (baseAmount ? '<span class="s-pool-group-amount">¥' + formatBudget(baseAmount) + '</span>' : '') +
+        '</div>' +
+        '<div class="s-base-rule-card">' +
+          '<div class="s-base-rule-row">' +
+            '<span class="s-base-rule-label">触发条件</span>' +
+            '<span class="s-base-rule-value">周期分 ≤ ' + strategy.base_pool_entry_score + '</span>' +
+          '</div>' +
+          '<div class="s-base-rule-row">' +
+            '<span class="s-base-rule-label">执行节奏</span>' +
+            '<span class="s-base-rule-value">' + freq +
+          '</div>' +
+          '<div class="s-base-rule-row">' +
+            '<span class="s-base-rule-label">每次执行金额</span>' +
+            '<span class="s-base-rule-value">' +
+              (baseExecAmt ? '约 ¥' + formatBudget(baseExecAmt) : '填写预算后显示') +
+            '</span>' +
+          '</div>' +
+          '<div class="s-base-rule-row">' +
+            '<span class="s-base-rule-label">冷静期</span>' +
+            '<span class="s-base-rule-value">无（按时间节奏持续执行）</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+
+    /* ── 信号池 ── */
+    var signalLevels = levels.filter(function (l) { return l.key === 'normal' || l.key === 'accel'; });
+    var signalAmt    = amounts ? amounts.signal : null;
+    var signalHtml   = '<div class="s-pool-group">' +
+      '<div class="s-pool-group-header signal">' +
+        '<span class="s-pool-group-name signal">信号池</span>' +
+        '<span class="s-pool-group-pct">' + strategy.signal_bullet_pct + '%</span>' +
+        (signalAmt ? '<span class="s-pool-group-amount">¥' + formatBudget(signalAmt) + '</span>' : '') +
+      '</div>' +
+      '<div class="s-pool-signals">';
+    signalLevels.forEach(function (lvl) {
+      signalHtml += renderSignalCard(lvl, activeKey, amounts, strategy);
+    });
+    signalHtml += '</div></div>';
+    container.insertAdjacentHTML('beforeend', signalHtml);
+
+    /* ── 极端池 ── */
+    var extremeLevels = levels.filter(function (l) { return l.key === 'quasi' || l.key === 'extreme'; });
+    var extremeAmt    = amounts ? amounts.extreme : null;
+    var extremeHtml   = '<div class="s-pool-group">' +
+      '<div class="s-pool-group-header extreme">' +
+        '<span class="s-pool-group-name extreme">极端池</span>' +
+        '<span class="s-pool-group-pct">' + strategy.extreme_bullet_pct + '%</span>' +
+        (extremeAmt ? '<span class="s-pool-group-amount">¥' + formatBudget(extremeAmt) + '</span>' : '') +
+      '</div>' +
+      '<div class="s-pool-signals">';
+    extremeLevels.forEach(function (lvl) {
+      extremeHtml += renderSignalCard(lvl, activeKey, amounts, strategy);
+    });
+    extremeHtml += '</div></div>';
+    container.insertAdjacentHTML('beforeend', extremeHtml);
+  }
+
+  /* ─────────────────────────────────────
+     实时信号（异步）
+  ───────────────────────────────────────── */
+  var loadingEl = document.getElementById('sLoading');
+  var mainEl    = document.getElementById('sMain');
+
+  fetchSignals().then(function (data) {
+    _signalData = data;
+
+    /* Alert */
+    var alertEl = document.getElementById('alertBanner');
+    if (isDataStale(data.updated_at)) {
+      document.getElementById('alertMsg').textContent =
+        '信号数据超过 48 小时未更新，已暂停信号型定投，请等待数据刷新。';
+      alertEl.classList.add('show');
+    } else if (data.degraded) {
+      document.getElementById('alertMsg').textContent =
+        '部分链上数据不可用（降级模式），周期分仅使用 200 周均线 + FGI 计算，信号型定投已暂停。';
+      alertEl.classList.add('show');
+    }
+
+    /* ── 市场状态 ── */
+    var score      = computeCycleScore(data);
+    var phase      = scorePhase(score);
+    var colorClass = score < 50 ? 'green' : score < 70 ? 'amber' : 'red';
+
+    var scoreEl = document.getElementById('sCycleScore');
+    scoreEl.textContent = score;
+    scoreEl.className   = 's-score-num ' + colorClass;
+    scoreEl.classList.remove('sk');
+
+    var phaseEl = document.getElementById('sScorePhase');
+    phaseEl.textContent = phase.phase;
+    phaseEl.classList.remove('sk');
+    document.getElementById('sScoreDesc').textContent = phase.desc;
+
+    var fillEl = document.getElementById('sScoreFill');
+    fillEl.className = 's-score-fill ' + colorClass;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        fillEl.style.width = Math.min(score, 100) + '%';
+      });
+    });
+
+    /* 历史参考窗口 */
+    var histWindow = historicalWindowDesc(score);
+    if (histWindow) {
+      document.getElementById('sHistoryRange').textContent   = histWindow.range;
+      document.getElementById('sHistoryContext').textContent = histWindow.context;
+      document.getElementById('sHistoryRow').style.display   = 'flex';
+    }
+
+    /* 低估区已持续 */
+    var bearMonths = bearDurationMonths(data.undervalued_since);
+    if (bearMonths !== null && score < 55) {
+      var sinceYM = data.undervalued_since.slice(0, 7); // "2025-09"
+      var parts   = sinceYM.split('-');
+      var sinceLabel = parts[0] + ' 年 ' + parseInt(parts[1], 10) + ' 月';
+      document.getElementById('sBearDurationRange').textContent   = '约 ' + bearMonths + ' 个月';
+      var totalWindow = histWindow ? histWindow.range : '7–14 个月';
+      document.getElementById('sBearDurationContext').textContent =
+        '自 ' + sinceLabel + ' 起进入熊市底部区，已持续约 ' + bearMonths + ' 个月。历史上完整底部阶段（周期分 0–45）持续约 ' + totalWindow + '。';
+      document.getElementById('sBearDurationRow').style.display   = 'flex';
+    }
+
+    /* ── 入场时机 ── */
+    var signal = detectSignalLevel(data);
+    var timing = entryTimingDesc(score, strategy.base_pool_entry_score, persona.name, signal);
+
+    var dotEl   = document.getElementById('sTimingDot');
+    var labelEl = document.getElementById('sTimingLabel');
+    dotEl.className   = 's-timing-dot ' + timing.color;
+    dotEl.classList.remove('sk');
+    labelEl.textContent = timing.verdict;
+    labelEl.className   = 's-timing-label ' + timing.color;
+    labelEl.classList.remove('sk');
+    document.getElementById('sTimingReason').textContent = timing.reason;
+
+    /* ── 三池分组信号区 ── */
+    renderSignalSection(data, getBudget());
+
+    /* ── 显示 ── */
+    loadingEl.style.display = 'none';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { mainEl.classList.add('show'); });
+    });
+
+  }).catch(function () {
+    /* 无网络：展示静态策略内容 */
+    document.getElementById('alertMsg').textContent =
+      '无法获取实时信号数据，市场状态不可用，策略配置仍可参考。';
+    document.getElementById('alertBanner').classList.add('show');
+
+    ['sCycleScore', 'sScorePhase'].forEach(function (id) {
+      var el = document.getElementById(id);
+      el.textContent = '—';
+      el.classList.remove('sk');
+    });
+    document.getElementById('sTimingDot').className   = 's-timing-dot';
+    document.getElementById('sTimingDot').classList.remove('sk');
+    var lbl = document.getElementById('sTimingLabel');
+    lbl.textContent = '无法获取实时数据';
+    lbl.classList.remove('sk');
+
+    loadingEl.style.display = 'none';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { mainEl.classList.add('show'); });
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>

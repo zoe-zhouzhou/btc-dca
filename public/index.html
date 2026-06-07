@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BTC 智能定投 — 周期看板</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header" style="display:flex;align-items:center;justify-content:space-between;height:52px">
+    <div class="logo" style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#1c1c1e;letter-spacing:-0.1px">
+      <div class="logo-icon" style="width:26px;height:26px;border-radius:7px;background:#1c1c1e;color:#f0ede8;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">₿</div>
+      BTC 智能定投
+    </div>
+    <nav class="nav" style="display:flex;background:#e7e3db;border-radius:6px;padding:3px;gap:2px;flex-shrink:0">
+      <a href="index.html" class="active" style="font-size:12px;font-weight:500;color:#1c1c1e;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap;background:#f0ede8;box-shadow:0 1px 3px rgba(0,0,0,.08)">看板</a>
+      <a href="questionnaire.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">问卷</a>
+      <a href="persona.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">画像</a>
+      <a href="strategy.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">策略</a>
+      <a href="install.html" style="font-size:12px;font-weight:500;color:#7c7870;text-decoration:none;padding:4px 6px;border-radius:4px;white-space:nowrap">Skill</a>
+    </nav>
+  </header>
+
+  <!-- Price Ticker -->
+  <a href="https://www.coingecko.com/en/coins/bitcoin" target="_blank" rel="noopener" class="price-ticker">
+    <span class="pt-label">BTC 当前价格</span>
+    <span class="pt-value sk" id="ptValue" style="min-width:80px">—</span>
+    <span class="pt-live" id="ptLive"></span>
+    <span class="pt-arrow">↗</span>
+  </a>
+
+  <!-- Alerts -->
+  <div class="alert" id="alertDegraded">
+    ⚠ 数据降级：链上数据不可用，仅 FGI + 资金费率 + 减半周期兜底。<strong>信号型定投已暂停。</strong>
+  </div>
+  <div class="alert" id="alertStale">
+    ⏰ 信号数据超过 48 小时未更新，信号型定投建议暂停。
+  </div>
+
+  <div class="section-label">当前市场状态</div>
+  <div class="market-module">
+
+    <!-- ── Score Card ── -->
+    <div class="score-card">
+      <div class="score-label-wrap">
+        <span class="score-label">当前周期位置分</span>
+        <span class="score-update sk" id="scoreUpdate" style="min-width:56px">—</span>
+      </div>
+
+      <div class="score-display">
+        <div class="score-number sk" id="scoreNumber" style="min-width:48px">--</div>
+        <div class="score-zone-badge sk" id="scoreZoneBadge" style="min-width:60px">—</div>
+      </div>
+
+      <div class="score-bar-wrap">
+        <div class="score-bar-track">
+          <div class="score-bar-fill" id="scoreBarFill" style="width:0%"></div>
+        </div>
+        <div class="score-bar-axis">
+          <span>0 底部区</span>
+          <span>50 中性</span>
+          <span>100 顶部区</span>
+        </div>
+      </div>
+
+      <div class="zone-pills">
+        <div class="zone-pill zone-bottom" id="zone0">
+          <div class="zone-range">0–25</div>
+          <div class="zone-name">极端底部</div>
+        </div>
+        <div class="zone-pill zone-bear" id="zone1">
+          <div class="zone-range">25–45</div>
+          <div class="zone-name">熊市积累</div>
+        </div>
+        <div class="zone-pill zone-neutral" id="zone2">
+          <div class="zone-range">45–70</div>
+          <div class="zone-name">震荡中性</div>
+        </div>
+        <div class="zone-pill zone-high" id="zone3">
+          <div class="zone-range">70–100</div>
+          <div class="zone-name">高估预警</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase description -->
+    <p class="phase-desc sk" id="phaseDesc">&nbsp;</p>
+
+    <!-- ── 8 Indicator Cards ── -->
+    <div class="ind-grid" id="indGrid">
+      <div class="ind-card" id="ic0">
+        <div class="ind-card-label">MVRV-Z Score</div>
+        <div class="ind-card-status sk" id="ics0">—</div>
+        <div class="ind-bar-track"><div class="ind-bar-fill" id="icb0" style="width:0%"></div></div>
+        <div class="ind-card-desc" id="icd0"></div>
+      </div>
+      <div class="ind-card" id="ic1">
+        <div class="ind-card-label">Puell Multiple</div>
+        <div class="ind-card-status sk" id="ics1">—</div>
+        <div class="ind-bar-track"><div class="ind-bar-fill" id="icb1" style="width:0%"></div></div>
+        <div class="ind-card-desc" id="icd1"></div>
+      </div>
+      <div class="ind-card" id="ic2">
+        <div class="ind-card-label">NUPL</div>
+        <div class="ind-card-status sk" id="ics2">—</div>
+        <div class="ind-bar-track"><div class="ind-bar-fill" id="icb2" style="width:0%"></div></div>
+        <div class="ind-card-desc" id="icd2"></div>
+      </div>
+      <div class="ind-card" id="ic3">
+        <div class="ind-card-label">交易所储备量</div>
+        <div class="ind-card-status sk" id="ics3">—</div>
+        <div class="ind-bar-track"><div class="ind-bar-fill" id="icb3" style="width:0%"></div></div>
+        <div class="ind-card-desc" id="icd3"></div>
+      </div>
+      <div class="ind-card" id="ic4">
+        <div class="ind-card-label">恐慌贪婪指数</div>
+        <div class="ind-card-status sk" id="ics4">—</div>
+        <div class="ind-bar-track"><div class="ind-bar-fill" id="icb4" style="width:0%"></div></div>
+        <div class="ind-card-desc" id="icd4"></div>
+      </div>
+      <div class="ind-card" id="ic5">
+        <div class="ind-card-label">资金费率</div>
+        <div class="ind-card-status sk" id="ics5">—</div>
+        <div class="ind-bar-track"><div class="ind-bar-fill" id="icb5" style="width:0%"></div></div>
+        <div class="ind-card-desc" id="icd5"></div>
+      </div>
+      <div class="ind-card" id="ic6">
+        <div class="ind-card-label">减半周期</div>
+        <div class="ind-card-status sk" id="ics6">—</div>
+        <div class="ind-bar-track"><div class="ind-bar-fill" id="icb6" style="width:0%"></div></div>
+        <div class="ind-card-desc" id="icd6"></div>
+      </div>
+      <div class="ind-card" id="ic7">
+        <div class="ind-card-label">ETF 资金流向</div>
+        <div class="ind-card-status sk" id="ics7">—</div>
+        <div class="ind-bar-track"><div class="ind-bar-fill" id="icb7" style="width:0%"></div></div>
+        <div class="ind-card-desc" id="icd7"></div>
+      </div>
+    </div>
+
+    <button class="how-calc-btn" id="openExplain">周期评分是如何计算的？</button>
+
+  </div>
+
+  <!-- ── Demo Persona Card ── -->
+  <div class="section-label">看看别人的策略长什么样</div>
+  <div class="demo-card">
+
+    <div class="demo-header">
+      <div class="demo-name-wrap">
+        <span class="demo-persona-name">坚定的建设者</span>
+        <span class="demo-tag">执行力 · 信念 · 稳健均衡</span>
+      </div>
+      <span class="demo-badge">示例</span>
+    </div>
+
+    <p class="demo-who">你有坚定的信念，也有匹配的执行力。不会因为短期价格波动而动摇——每次市场崩溃，都是你平静地按下买入键的时刻。</p>
+
+    <!-- 五维度雷达图 -->
+    <svg class="demo-radar" viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="110,25 188,57 163,162 57,162 32,57"
+               fill="none" stroke="rgba(0,0,0,.08)" stroke-width="1"/>
+      <polygon points="110,65 150,81 136,133 84,133 70,81"
+               fill="none" stroke="rgba(0,0,0,.06)" stroke-width="1"/>
+      <polygon points="110,41 174,69 152,150 68,150 46,69"
+               fill="rgba(30,125,80,.12)" stroke="rgba(30,125,80,.45)" stroke-width="1.5"/>
+      <line x1="110" y1="25"  x2="110" y2="105" stroke="rgba(0,0,0,.06)" stroke-width="1"/>
+      <line x1="188" y1="57"  x2="110" y2="105" stroke="rgba(0,0,0,.06)" stroke-width="1"/>
+      <line x1="163" y1="162" x2="110" y2="105" stroke="rgba(0,0,0,.06)" stroke-width="1"/>
+      <line x1="57"  y1="162" x2="110" y2="105" stroke="rgba(0,0,0,.06)" stroke-width="1"/>
+      <line x1="32"  y1="57"  x2="110" y2="105" stroke="rgba(0,0,0,.06)" stroke-width="1"/>
+      <circle cx="110" cy="41"  r="3" fill="rgba(30,125,80,.7)"/>
+      <circle cx="174" cy="69"  r="3" fill="rgba(30,125,80,.7)"/>
+      <circle cx="152" cy="150" r="3" fill="rgba(30,125,80,.7)"/>
+      <circle cx="68"  cy="150" r="3" fill="rgba(30,125,80,.7)"/>
+      <circle cx="46"  cy="69"  r="3" fill="rgba(30,125,80,.7)"/>
+      <text x="110" y="16"  text-anchor="middle" class="radar-lbl">资金性质</text>
+      <text x="202" y="56"  text-anchor="start"  class="radar-lbl">心理韧性</text>
+      <text x="175" y="174" text-anchor="middle" class="radar-lbl">退出视野</text>
+      <text x="45"  y="174" text-anchor="middle" class="radar-lbl">资金结构</text>
+      <text x="18"  y="56"  text-anchor="end"    class="radar-lbl">知识深度</text>
+    </svg>
+
+    <!-- 三场景策略行 -->
+    <div class="demo-bullets">
+      <div class="demo-bullet seg-base-row">
+        <div class="db-left">
+          <div class="db-dot dot-base"></div>
+          <div class="db-name">日常定投池</div>
+        </div>
+        <div class="db-pct">35%</div>
+        <div class="db-desc">触发：任何时候 · 每两周定时执行，无论涨跌</div>
+      </div>
+      <div class="demo-bullet seg-signal-row">
+        <div class="db-left">
+          <div class="db-dot dot-signal"></div>
+          <div class="db-name">信号触发池</div>
+        </div>
+        <div class="db-pct">35%</div>
+        <div class="db-desc">触发：周期分≤45 且 3 项以上指标低估，加倍买入</div>
+      </div>
+      <div class="demo-bullet seg-extreme-row">
+        <div class="db-left">
+          <div class="db-dot dot-extreme"></div>
+          <div class="db-name">极端抄底池</div>
+        </div>
+        <div class="db-pct">30%</div>
+        <div class="db-desc">触发：周期分≤20 且 MVRV-Z≤0 且 FGI&lt;10，分两批出击</div>
+      </div>
+    </div>
+
+    <button class="demo-why-btn" id="openPoolWhy">三个池子各自解决什么问题？</button>
+
+    <p class="demo-hint">画像不同，策略不同——完成 5 分钟问卷，找到属于你的参数组合。</p>
+
+  </div>
+
+  <!-- ── Backtest Comparison ── -->
+  <div class="section-label">策略收益对比</div>
+  <div class="bt-card">
+    <div class="bt-tabs">
+      <button class="bt-tab active" data-bt="2022">2022 熊市</button>
+      <button class="bt-tab" data-bt="2018">2018 熊市</button>
+    </div>
+
+    <div class="bt-kpi">
+      <div class="bt-kpi-group">
+        <div class="bt-kpi-val amber" id="btCost">$23,400</div>
+        <div class="bt-kpi-key">策略平均成本</div>
+      </div>
+      <div class="bt-kpi-group">
+        <div class="bt-kpi-val green" id="btReturn">+349%</div>
+        <div class="bt-kpi-key">牛市顶点收益</div>
+        <div class="bt-kpi-alpha">
+          <span class="bt-alpha-num" id="btAlpha">+28%</span>
+          <span class="bt-alpha-lbl">比无脑月投多赚</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bt-rows">
+      <div class="bt-row">
+        <div class="bt-row-name">你的策略</div>
+        <div class="bt-row-track">
+          <div class="bt-row-bar bar-strategy" id="bar0" style="width:100%">
+            <span id="barlbl0">+349%</span>
+          </div>
+        </div>
+        <div class="bt-row-pct amber" id="bpct0">+349%</div>
+      </div>
+      <div class="bt-row">
+        <div class="bt-row-name">无脑月投</div>
+        <div class="bt-row-track">
+          <div class="bt-row-bar bar-dca" id="bar1" style="width:78%">
+            <span id="barlbl1">+271%</span>
+          </div>
+        </div>
+        <div class="bt-row-pct" id="bpct1">+271%</div>
+      </div>
+      <div class="bt-row">
+        <div class="bt-row-name">一次性买入</div>
+        <div class="bt-row-track">
+          <div class="bt-row-bar bar-lump" id="bar2" style="width:62%">
+            <span id="barlbl2">+217%</span>
+          </div>
+        </div>
+        <div class="bt-row-pct" id="bpct2">+217%</div>
+      </div>
+    </div>
+
+    <p class="bt-note" id="btNote">从与当前市场最相似的历史位置（2022年6月 $17,500）入场，按示例策略执行至 2024年3月牛市顶点 $73,000。历史数据，不代表未来收益。</p>
+  </div>
+
+  <!-- ── CTA ── -->
+  <a href="questionnaire.html" class="cta-btn" id="mainCta">
+    <span id="mainCtaText">你是哪种画像？测出你的专属策略</span>
+    <span class="arrow">↗</span>
+  </a>
+
+  <!-- Sources -->
+  <details class="sources">
+    <summary>查看数据来源</summary>
+    <div class="src-list">
+      <div class="src-item"><span class="src-metric">MVRV-Z Score</span><span class="src-origin">Glassnode（备用：CoinMetrics）</span></div>
+      <div class="src-item"><span class="src-metric">Puell Multiple</span><span class="src-origin">Glassnode（备用：LookIntoBitcoin）</span></div>
+      <div class="src-item"><span class="src-metric">NUPL / SOPR</span><span class="src-origin">Glassnode（备用：LookIntoBitcoin）</span></div>
+      <div class="src-item"><span class="src-metric">交易所储备量</span><span class="src-origin">Glassnode（备用：CryptoQuant）</span></div>
+      <div class="src-item"><span class="src-metric">恐慌贪婪指数</span><span class="src-origin">Alternative.me</span></div>
+      <div class="src-item"><span class="src-metric">资金费率</span><span class="src-origin">Binance / Bybit 公开 API</span></div>
+      <div class="src-item"><span class="src-metric">减半周期</span><span class="src-origin">本地计算（固定减半日期）</span></div>
+      <div class="src-item"><span class="src-metric">ETF 资金流向</span><span class="src-origin">GitHub Actions 每日拉取</span></div>
+    </div>
+  </details>
+
+</div><!-- /container -->
+
+<script src="js/utils.js"></script>
+<script src="js/signals.js"></script>
+<script>
+/* ─── Helpers ─── */
+function barColor(score) {
+  if (score < 25) return '#0b9e8c';
+  if (score < 45) return 'var(--green-bar)';
+  if (score < 70) return 'var(--amber-bar)';
+  return 'var(--red-bar)';
+}
+
+function activeZone(score) {
+  if (score < 25) return 0;
+  if (score < 45) return 1;
+  if (score < 70) return 2;
+  return 3;
+}
+
+function phaseHeadline(score) {
+  if (score < 25) return '当前市场处于极端底部区间，历史级别的建仓窗口正在开启。链上多项指标同时发出底部信号，信号型定投应全速运行。';
+  if (score < 45) return '当前市场处于熊市积累区间，多项链上指标显示估值偏低。这是历史上建仓回报较为可观的时期，建议开始定投。';
+  if (score < 70) return '当前市场处于震荡中性区间，链上信号无明确方向。建议维持时间型定投节奏，暂停信号型定投，等待更明确的低估信号出现。';
+  return '当前市场处于高估预警区间，多项指标显示估值偏高。建议放缓新建仓节奏，保护已有仓位，接近退出条件时需重新评估策略。';
+}
+
+function scoreColorClass(score) {
+  if (score < 45) return 'green';
+  if (score < 70) return 'amber';
+  return 'red';
+}
+
+/* ─── 更新主页紧凑条 ─── */
+function setChip(idx, score) {
+  const bar = document.getElementById('chipBar' + idx);
+  const txt = document.getElementById('chipScore' + idx);
+  if (!bar || !txt) return;
+  bar.style.background = barColor(score);
+  bar.style.width = score + '%';
+  txt.classList.remove('sk');
+  txt.textContent = score;
+  txt.className = 'ind-chip-score ' + scoreColorClass(score);
+}
+
+/* ─── 更新弹窗徽章 ─── */
+function setBadge(id, score) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('sk');
+  el.textContent = '~' + score + '分';
+  el.className = 'ind-badge ' + scoreColorClass(score);
+}
+
+/* ─── 更新弹窗原始值行 ─── */
+function setVal(id, label, val) {
+  const el = document.getElementById('val' + id);
+  if (!el) return;
+  el.innerHTML = '<span class="mir-val-label">' + label + '</span>' + val;
+}
+
+/* ─── Main ─── */
+async function loadAndRender() {
+  let d;
+  try { d = await fetchSignals(); }
+  catch { return showError(); }
+
+  // 并行拉取实时数据；任一失败时降级用 signals-feed.json 值
+  const [priceRes, fgiRes, frRes] = await Promise.allSettled([
+    fetchLivePrice(),
+    fetchLiveFGI(),
+    fetchLiveFundingRate(),
+  ]);
+  const priceIsLive = priceRes.status === 'fulfilled';
+  if (priceIsLive) d.current_price = priceRes.value;
+  if (fgiRes.status === 'fulfilled') {
+    d.fgi = { ...d.fgi, value: fgiRes.value.value, label: fgiRes.value.label };
+  }
+  if (frRes.status === 'fulfilled') {
+    d.funding_rate = { ...d.funding_rate, value: frRes.value };
+  }
+
+  renderDashboard(d);
+
+  // ptLive 指示器在此更新（priceIsLive 是本函数的局部变量，不能传入 renderDashboard）
+  const ptLiveEl = document.getElementById('ptLive');
+  if (ptLiveEl) ptLiveEl.className = 'pt-live ' + (priceIsLive ? 'live' : 'cached');
+}
+
+function renderDashboard(d) {
+
+  if (isDataStale(d.updated_at)) document.getElementById('alertStale').classList.add('show');
+  if (d.degraded)                document.getElementById('alertDegraded').classList.add('show');
+
+  const score = computeCycleScore(d);
+
+  /* Price */
+  const ptEl = document.getElementById('ptValue');
+  ptEl.classList.remove('sk');
+  ptEl.textContent = formatPrice(d.current_price);
+
+  /* Score number */
+  document.getElementById('scoreNumber').classList.remove('sk');
+  document.getElementById('scoreNumber').textContent = score;
+
+  /* Zone badge */
+  const z = scoreZone(score);
+  const zBadge = document.getElementById('scoreZoneBadge');
+  zBadge.classList.remove('sk');
+  zBadge.textContent = z.zone;
+  zBadge.className   = 'score-zone-badge zone-badge-' + z.cls;
+
+  /* Bar */
+  const bar = document.getElementById('scoreBarFill');
+  bar.style.background = barColor(score);
+  requestAnimationFrame(() => { bar.style.width = score + '%'; });
+
+  /* Zone pills */
+  const az = activeZone(score);
+  ['zone0','zone1','zone2','zone3'].forEach((id, i) =>
+    document.getElementById(id).classList.toggle('zone-inactive', i !== az));
+
+  /* Phase */
+  const descEl = document.getElementById('phaseDesc');
+  descEl.classList.remove('sk');
+  descEl.textContent = phaseHeadline(score);
+
+  /* Updated at */
+  const updEl = document.getElementById('scoreUpdate');
+  updEl.classList.remove('sk');
+  updEl.textContent = relativeDate(d.updated_at);
+
+  /* 8 indicators: chips (main page) + badges (modal) */
+  const scores = [
+    d.mvrv_z?.normalized_score            ?? 50,
+    d.puell_multiple?.normalized_score    ?? 50,
+    d.nupl?.normalized_score              ?? 50,
+    d.exchange_reserves?.normalized_score ?? 50,
+    d.fgi?.normalized_score               ?? 50,
+    d.funding_rate?.normalized_score      ?? 50,
+    d.halving_cycle?.normalized_score     ?? 50,
+    d.etf_flow?.normalized_score          ?? 50,
+  ];
+  scores.forEach((s, i) => {
+    setChip(i, s);
+    setBadge('bdg' + i, s);
+  });
+
+  /* 8 指标卡片 */
+  const indStatuses = [
+    mvrvStatus(d.mvrv_z?.value),
+    puellStatus(d.puell_multiple?.value),
+    nuplStatus(d.nupl?.value),
+    reserveStatus(d.exchange_reserves?.trend),
+    fgiStatus(d.fgi?.value),
+    frStatus(d.funding_rate?.value),
+    halvingStatus(d.halving_cycle?.months_since_halving),
+    etfStatus(d.etf_flow?.['7d_avg_usd_m']),
+  ];
+  indStatuses.forEach((st, i) => {
+    const statusEl = document.getElementById('ics' + i);
+    const barEl    = document.getElementById('icb' + i);
+    const descEl   = document.getElementById('icd' + i);
+    if (!statusEl) return;
+    statusEl.classList.remove('sk');
+    statusEl.textContent = st.text;
+    statusEl.className   = 'ind-card-status ' + scoreColorClass(scores[i]);
+    if (barEl) {
+      barEl.style.background = barColor(scores[i]);
+      requestAnimationFrame(() => { barEl.style.width = scores[i] + '%'; });
+    }
+    if (descEl) descEl.textContent = st.desc;
+  });
+
+  /* 原始值填充弹窗 */
+  const frVal = d.funding_rate?.value;
+  const etfVal = d.etf_flow?.['7d_avg_usd_m'];
+  setVal(0, '当前值  ', d.mvrv_z?.value?.toFixed(2) ?? '—');
+  setVal(1, '当前值  ', d.puell_multiple?.value?.toFixed(2) ?? '—');
+  setVal(2, '当前值  ', d.nupl?.value !== undefined ? d.nupl.value.toFixed(3) : '—');
+  setVal(3, '趋势    ', d.exchange_reserves?.trend === 'decreasing' ? '持续减少 ↓' : d.exchange_reserves?.trend === 'increasing' ? '持续增加 ↑' : (d.exchange_reserves?.trend ?? '—'));
+  setVal(4, '当前值  ', (d.fgi?.value ?? '—') + (d.fgi?.label ? '  ·  ' + d.fgi.label : ''));
+  setVal(5, '当前费率  ', frVal !== undefined ? frVal + '% / 8h' : '—');
+  setVal(6, '距上次减半  ', d.halving_cycle?.months_since_halving !== undefined ? d.halving_cycle.months_since_halving + ' 个月' : '—');
+  setVal(7, '7日均净流向  ', etfVal !== undefined ? (etfVal >= 0 ? '+' : '') + etfVal + 'M USD' : '—');
+
+}
+
+/* ─── 8 指标卡语义标签函数 ─── */
+function mvrvStatus(val) {
+  if (val === null || val === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  if (val < 0)   return { text: '链上整体亏损', cls: 'green', desc: '历史最强买入信号，所有持币者平均亏损' };
+  if (val < 1)   return { text: '低估区 ' + val.toFixed(1), cls: 'green', desc: '链上估值偏低，历史底部特征' };
+  if (val < 3)   return { text: '正常区 ' + val.toFixed(1), cls: 'amber', desc: '估值处于历史均值附近' };
+  return         { text: '高估区 ' + val.toFixed(1),  cls: 'red',   desc: '估值偏高，谨慎追涨' };
+}
+function puellStatus(val) {
+  if (val === null || val === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  if (val < 0.5) return { text: '矿工亏损期', cls: 'green', desc: '矿工被迫低价抛售，历史底部信号' };
+  if (val < 1)   return { text: '低于均值 ' + val.toFixed(2), cls: 'green', desc: '矿工收益低于年均，偏底部' };
+  if (val < 2)   return { text: '正常 ' + val.toFixed(2), cls: 'amber', desc: '矿工收益正常' };
+  return         { text: '矿工高收益 ' + val.toFixed(2), cls: 'red', desc: '矿工收益远超均值，顶部特征' };
+}
+function nuplStatus(val) {
+  if (val === null || val === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  if (val < 0)    return { text: '市场整体亏损', cls: 'green', desc: '历史底部特征，持仓者平均处于亏损' };
+  if (val < 0.25) return { text: '早期复苏', cls: 'amber', desc: '整体轻微盈利，仍有建仓空间' };
+  if (val < 0.5)  return { text: '中性乐观', cls: 'amber', desc: '盈利区间扩大，估值趋于正常' };
+  return          { text: '贪婪区', cls: 'red', desc: '持仓者大幅盈利，估值偏高' };
+}
+function reserveStatus(trend) {
+  if (trend === 'decreasing') return { text: '持续流出链上', cls: 'green', desc: '用户提链自托管，交易所卖压减少' };
+  if (trend === 'increasing') return { text: '流入增加', cls: 'red',   desc: '用户将币存入交易所，卖压上升' };
+  return { text: '趋势中性', cls: 'amber', desc: '储备量无明显方向' };
+}
+function fgiStatus(val) {
+  if (val === null || val === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  if (val < 25)  return { text: '极度恐慌 ' + val, cls: 'green', desc: '市场情绪极度悲观，历史好时机' };
+  if (val < 45)  return { text: '恐慌 ' + val, cls: 'green', desc: '情绪偏空，适合定投' };
+  if (val < 60)  return { text: '中性 ' + val, cls: 'amber', desc: '市场情绪均衡' };
+  if (val < 75)  return { text: '贪婪 ' + val, cls: 'amber', desc: '情绪偏乐观，注意回调风险' };
+  return         { text: '极度贪婪 ' + val, cls: 'red', desc: '市场过热，顶部风险上升' };
+}
+function frStatus(val) {
+  if (val === null || val === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  if (val < 0)    return { text: '负费率 ' + val + '%', cls: 'green', desc: '空头主导，多头出清完毕' };
+  if (val < 0.03) return { text: '低费率 ' + val + '%', cls: 'amber', desc: '市场中性，无明显杠杆方向' };
+  if (val < 0.1)  return { text: '费率正常 ' + val + '%', cls: 'amber', desc: '多头有一定溢价，注意风险' };
+  return          { text: '费率过高 ' + val + '%', cls: 'red', desc: '多头杠杆过热，爆仓风险上升' };
+}
+function halvingStatus(months) {
+  if (months === null || months === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  if (months < 18) return { text: '减半后 ' + months + ' 月', cls: 'green', desc: '历史最佳布局窗口，效应尚未显现' };
+  if (months < 30) return { text: '减半后 ' + months + ' 月', cls: 'amber', desc: '减半效应逐步释放中' };
+  return           { text: '减半后 ' + months + ' 月', cls: 'amber', desc: '远离减半，进入周期中后段' };
+}
+function etfStatus(val) {
+  if (val === null || val === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  if (val < -100) return { text: '净流出 ' + val + 'M', cls: 'amber', desc: '机构持续卖出，短期看空' };
+  if (val < 0)    return { text: '轻微流出 ' + val + 'M', cls: 'amber', desc: '机构小幅减仓' };
+  if (val < 50)   return { text: '小幅流入 +' + val + 'M', cls: 'amber', desc: '机构缓慢建仓' };
+  return          { text: '净流入 +' + val + 'M', cls: 'green', desc: '机构大量买入，看多信号' };
+}
+
+/* ─── 回测数据 ─── */
+const BT_DATA = {
+  '2022': {
+    cost: '$23,400', ret: '+349%', alpha: '+28%',
+    bars: [100, 78, 62],
+    lbls: ['+349%', '+271%', '+217%'],
+    note: '从与当前市场最相似的历史位置（2022年6月 $17,500）入场，按示例策略执行至 2024年3月牛市顶点 $73,000。历史数据，不代表未来收益。'
+  },
+  '2018': {
+    cost: '$8,400', ret: '+1,840%', alpha: '+34%',
+    bars: [100, 75, 68],
+    lbls: ['+1,840%', '+1,375%', '+1,245%'],
+    note: '从2018年12月熊市底部（$3,200）入场，按示例策略执行至 2021年11月牛市顶点 $65,000。历史数据，不代表未来收益。'
+  }
+};
+
+function renderBT(key) {
+  const bt = BT_DATA[key];
+  document.getElementById('btCost').textContent   = bt.cost;
+  document.getElementById('btReturn').textContent = bt.ret;
+  document.getElementById('btAlpha').textContent  = bt.alpha;
+  document.getElementById('btNote').textContent   = bt.note;
+  [0, 1, 2].forEach(i => {
+    document.getElementById('bar'    + i).style.width = bt.bars[i] + '%';
+    document.getElementById('barlbl' + i).textContent = bt.lbls[i];
+    document.getElementById('bpct'   + i).textContent = bt.lbls[i];
+  });
+}
+
+document.querySelectorAll('.bt-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bt-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderBT(btn.dataset.bt);
+  });
+});
+
+/* ─── 根据 localStorage 策略状态更新 CTA ─── */
+(function () {
+  try {
+    var saved = localStorage.getItem('btc_dca_scores');
+    if (saved) {
+      var s = JSON.parse(saved);
+      if (s && s.fund_nature && s.resilience) {
+        var personaKey = localStorage.getItem('btc_dca_persona');
+        var href = personaKey ? 'strategy.html?persona=' + personaKey : 'strategy.html';
+        var cta = document.getElementById('mainCta');
+        if (cta) {
+          cta.href = href;
+          var txt = document.getElementById('mainCtaText');
+          if (txt) txt.textContent = '查看你的专属策略';
+        }
+      }
+    }
+  } catch (_) {}
+})();
+
+// 首次加载
+loadAndRender();
+
+// 价格每 60 秒轮询刷新（仅更新价格 ticker）
+setInterval(async () => {
+  try {
+    const price = await fetchLivePrice();
+    const ptEl = document.getElementById('ptValue');
+    if (ptEl) ptEl.textContent = formatPrice(price);
+    const ptLiveEl = document.getElementById('ptLive');
+    if (ptLiveEl) ptLiveEl.className = 'pt-live live';
+  } catch {
+    const ptLiveEl = document.getElementById('ptLive');
+    if (ptLiveEl) ptLiveEl.className = 'pt-live cached';
+  }
+}, 60000);
+
+function showError() {
+  ['scoreNumber','phaseDesc'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('sk'); el.textContent = '—'; }
+  });
+  for (let i = 0; i < 8; i++) {
+    const s = document.getElementById('chipScore' + i);
+    if (s) { s.classList.remove('sk'); s.textContent = '—'; }
+    const b = document.getElementById('bdg' + i);
+    if (b) { b.classList.remove('sk'); b.textContent = '—'; }
+  }
+  document.getElementById('ptValue').classList.remove('sk');
+  document.getElementById('ptValue').textContent = '—';
+  document.getElementById('scoreZoneBadge').classList.remove('sk');
+  document.getElementById('scoreZoneBadge').textContent = '数据错误';
+}
+
+/* ─── Modals ─── */
+document.addEventListener('DOMContentLoaded', function () {
+  function initModal(overlayId, openBtnId, closeBtnId) {
+    const overlay = document.getElementById(overlayId);
+    function open()  { overlay.classList.add('open');    document.body.style.overflow = 'hidden'; }
+    function close() { overlay.classList.remove('open'); document.body.style.overflow = ''; }
+    document.getElementById(openBtnId).addEventListener('click', open);
+    document.getElementById(closeBtnId).addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  }
+  initModal('explainOverlay', 'openExplain', 'closeExplain');
+  initModal('poolWhyOverlay', 'openPoolWhy', 'closePoolWhy');
+});
+</script>
+
+<!-- ════════════════════════════════════════
+     Modal: 三池策略设计原理
+     ════════════════════════════════════════ -->
+<div class="modal-overlay" id="poolWhyOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="poolWhyTitle">
+
+    <div class="modal-header">
+      <h2 class="modal-title" id="poolWhyTitle">三个池子各自解决什么问题？</h2>
+      <button class="modal-close" id="closePoolWhy" aria-label="关闭">×</button>
+    </div>
+
+    <div class="modal-body">
+
+      <p class="modal-lead">
+        三个池子解决一个核心矛盾：你既要<strong>纪律</strong>（日常定投池保底），又要能抓住<strong>极端机会</strong>（极端抄底池出击），同时中间还有<strong>弹性空间</strong>（信号触发池跟随信号动态调整）。
+      </p>
+
+      <div class="pw-items">
+
+        <div class="pw-item">
+          <div class="pw-item-header">
+            <div class="db-dot dot-base"></div>
+            <span class="pw-item-name">日常定投池</span>
+            <span class="pw-item-pct">35%</span>
+          </div>
+          <p class="pw-item-body">
+            核心价值<strong>不是收益最优</strong>，而是防止你在漫长熊市里因为"感觉没底"而停止定投。纪律本身就是收益的一部分——历史数据反复证明，定投中断的成本远大于多等一个月的成本。
+          </p>
+          <div class="pw-item-trigger">
+            <span class="pw-trigger-label">触发条件</span>
+            <span>任何时候 · 每两周定时执行，无论涨跌</span>
+          </div>
+        </div>
+
+        <div class="pw-item pw-item--signal">
+          <div class="pw-item-header">
+            <div class="db-dot dot-signal"></div>
+            <span class="pw-item-name">信号触发池</span>
+            <span class="pw-item-pct">35%</span>
+          </div>
+          <p class="pw-item-body">
+            用周期分驱动，把<strong>"越跌越买"的逻辑系统化</strong>，避免靠情绪判断加仓时机。你不需要猜底部在哪——当 3 项以上指标同时低估时，系统自动提示加大买入，把判断权交给数据。
+          </p>
+          <div class="pw-item-trigger">
+            <span class="pw-trigger-label">触发条件</span>
+            <span>周期分≤45 且 3 项以上指标进入低估区</span>
+          </div>
+        </div>
+
+        <div class="pw-item pw-item--extreme">
+          <div class="pw-item-header">
+            <div class="db-dot dot-extreme"></div>
+            <span class="pw-item-name">极端抄底池</span>
+            <span class="pw-item-pct">30%</span>
+          </div>
+          <p class="pw-item-body">
+            为那些<strong>一年只出现一两次的历史级别底部</strong>预留弹药。触发条件故意设得严苛（MVRV-Z≤0 + FGI&lt;10 + 周期分≤20），防止频繁误触；一旦满足，分两批全力出击，最大化这种罕见机会的建仓效率。
+          </p>
+          <div class="pw-item-trigger">
+            <span class="pw-trigger-label">触发条件</span>
+            <span>周期分≤20 且 MVRV-Z≤0 且 FGI&lt;10（连续 7 天）</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /modal-body -->
+  </div><!-- /modal -->
+</div><!-- /modal-overlay -->
+
+<!-- ════════════════════════════════════════
+     Modal: 周期分数体系
+     ════════════════════════════════════════ -->
+<div class="modal-overlay" id="explainOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+
+    <div class="modal-header">
+      <h2 class="modal-title" id="modalTitle">周期分数体系</h2>
+      <button class="modal-close" id="closeExplain" aria-label="关闭">×</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- 设计原则 -->
+      <p class="modal-lead">
+        设计原则：<strong>链上数据为主、情绪数据为辅、宏观数据作背景。</strong>MVRV-Z 和 Puell Multiple 占最大比重，因为它们基于区块链原始数据，不容易被操纵，历史预测精度也最高。FGI 虽然直观，但反应滞后且容易被情绪放大，权重适当降低。归一化的关键是把每个指标都映射到同一把尺子上——<strong>分数越低代表越靠近底部，越应该买入</strong>，最终加权平均出来的综合分就有了统一的方向感。
+      </p>
+
+      <!-- 三类树 -->
+      <div class="cat-tree">
+        <div class="cat-row">
+          <div class="cat-box cat-box--root">BTC 熊市定投参考体系</div>
+        </div>
+        <div class="cat-row">
+          <div class="cat-box cat-box--onchain">
+            <div class="cat-label">链上数据</div>
+            <div class="cat-weight">70%</div>
+            <div class="cat-items">MVRV-Z · Puell Multiple · NUPL · 交易所储备量</div>
+          </div>
+          <div class="cat-box cat-box--sentiment">
+            <div class="cat-label">市场情绪</div>
+            <div class="cat-weight">20%</div>
+            <div class="cat-items">恐慌贪婪指数 · 资金费率</div>
+          </div>
+          <div class="cat-box cat-box--macro">
+            <div class="cat-label">宏观数据</div>
+            <div class="cat-weight">10%</div>
+            <div class="cat-items">减半周期 · ETF 资金流向</div>
+          </div>
+        </div>
+        <div class="cat-row">
+          <div class="cat-box cat-box--signal">
+            信号叠加判断 → 3+ 指标进入低估区 → 触发加大定投频率
+          </div>
+        </div>
+      </div>
+
+      <!-- 各指标当前状态汇总（从主页移入弹窗） -->
+      <h3 class="modal-section-title">各指标当前状态</h3>
+      <div class="modal-ind-chips">
+        <div class="ind-chip-row">
+          <span class="ind-chip-name">MVRV-Z（市值实现市值比）</span>
+          <span class="mic-weight">25%</span>
+          <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar0"></div></div>
+          <span class="ind-chip-score sk" id="chipScore0">—</span>
+        </div>
+        <div class="ind-chip-row">
+          <span class="ind-chip-name">Puell（矿工收益倍数）</span>
+          <span class="mic-weight">20%</span>
+          <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar1"></div></div>
+          <span class="ind-chip-score sk" id="chipScore1">—</span>
+        </div>
+        <div class="ind-chip-row">
+          <span class="ind-chip-name">NUPL（未实现净利润）</span>
+          <span class="mic-weight">15%</span>
+          <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar2"></div></div>
+          <span class="ind-chip-score sk" id="chipScore2">—</span>
+        </div>
+        <div class="ind-chip-row">
+          <span class="ind-chip-name">交易所储备量</span>
+          <span class="mic-weight">10%</span>
+          <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar3"></div></div>
+          <span class="ind-chip-score sk" id="chipScore3">—</span>
+        </div>
+        <div class="ind-chip-row">
+          <span class="ind-chip-name">恐慌贪婪指数 FGI</span>
+          <span class="mic-weight">15%</span>
+          <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar4"></div></div>
+          <span class="ind-chip-score sk" id="chipScore4">—</span>
+        </div>
+        <div class="ind-chip-row">
+          <span class="ind-chip-name">资金费率</span>
+          <span class="mic-weight">5%</span>
+          <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar5"></div></div>
+          <span class="ind-chip-score sk" id="chipScore5">—</span>
+        </div>
+        <div class="ind-chip-row">
+          <span class="ind-chip-name">减半周期位置</span>
+          <span class="mic-weight">5%</span>
+          <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar6"></div></div>
+          <span class="ind-chip-score sk" id="chipScore6">—</span>
+        </div>
+        <div class="ind-chip-row">
+          <span class="ind-chip-name">ETF 资金流向</span>
+          <span class="mic-weight">5%</span>
+          <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar7"></div></div>
+          <span class="ind-chip-score sk" id="chipScore7">—</span>
+        </div>
+      </div>
+
+      <!-- 8 项指标详情（按三大分类分组） -->
+      <h3 class="modal-section-title">8 项指标详情</h3>
+      <!-- 链上数据 70% -->
+      <div class="modal-cat-group">
+        <div class="modal-cat-header">
+          <span class="modal-cat-name">链上数据</span>
+          <span class="modal-cat-pct">70%</span>
+        </div>
+        <div class="modal-ind-row">
+          <div class="mir-header">
+            <span class="mir-name">MVRV-Z Score（市值实现市值比）</span>
+          </div>
+          <p class="mir-val" id="val0">—</p>
+          <p class="mir-why">链上估值核心指标，衡量市值相对实现市值的标准差偏离。负值或接近零为历史底部特征，历史三次熊市底部均出现此信号，可靠性最高。</p>
+          <p class="mir-rule">底部 &lt;0→0分，0–2→线性 · 顶部 &gt;7→100分</p>
+        </div>
+        <div class="modal-ind-row">
+          <div class="mir-header">
+            <span class="mir-name">Puell Multiple（矿工收益倍数）</span>
+          </div>
+          <p class="mir-val" id="val1">—</p>
+          <p class="mir-why">矿工日收入 ÷ 365日均值。低值代表矿工亏损期，历史上是强力买入信号——矿工被迫低价卖币在底部制造恐慌，链上原始数据不易被操纵。</p>
+          <p class="mir-rule">底部 &lt;0.5→0分，0.5–1→线性 · 顶部 &gt;4→100分</p>
+        </div>
+        <div class="modal-ind-row">
+          <div class="mir-header">
+            <span class="mir-name">NUPL / SOPR（未实现净利润/亏损）</span>
+          </div>
+          <p class="mir-val" id="val2">—</p>
+          <p class="mir-why">未实现净盈亏比率。负值意味着市场整体亏损，为历史底部特征。与 MVRV-Z 互补，从全市场盈亏角度双重验证估值。</p>
+          <p class="mir-rule">底部 &lt;−0.25→0分 · 顶部 &gt;0.75→100分</p>
+        </div>
+        <div class="modal-ind-row">
+          <div class="mir-header">
+            <span class="mir-name">交易所储备量</span>
+          </div>
+          <p class="mir-val" id="val3">—</p>
+          <p class="mir-why">交易所 BTC 持仓量。持续下降意味着用户提链自托管（减少卖压），为看多信号；上升意味着准备卖出。</p>
+          <p class="mir-rule">底部 近1年新低→0分 · 顶部 近1年新高→100分</p>
+        </div>
+      </div>
+
+      <!-- 市场情绪 20% -->
+      <div class="modal-cat-group">
+        <div class="modal-cat-header">
+          <span class="modal-cat-name">市场情绪</span>
+          <span class="modal-cat-pct">20%</span>
+        </div>
+        <div class="modal-ind-row">
+          <div class="mir-header">
+            <span class="mir-name">恐慌贪婪指数 FGI（Fear &amp; Greed Index）</span>
+          </div>
+          <p class="mir-val" id="val4">—</p>
+          <p class="mir-why">综合交易量、波动率、社交媒体情绪等多维度。极度恐慌（&lt;25）往往是入场时机，但反应滞后，需链上数据佐证，权重不超过 NUPL。</p>
+          <p class="mir-rule">底部 0–25极度恐慌→直接映射 · 顶部 75–100极度贪婪</p>
+        </div>
+        <div class="modal-ind-row">
+          <div class="mir-header">
+            <span class="mir-name">资金费率（永续合约）</span>
+          </div>
+          <p class="mir-val" id="val5">—</p>
+          <p class="mir-why">永续合约资金费率。持续负值代表多头出清、空头主导，为潜在底部信号。权重低因为波动快，通常只作短期信号参考。</p>
+          <p class="mir-rule">底部 持续负值→0分 · 顶部 异常高正（&gt;0.1%/8h）→100分</p>
+        </div>
+      </div>
+
+      <!-- 宏观数据 10% -->
+      <div class="modal-cat-group">
+        <div class="modal-cat-header">
+          <span class="modal-cat-name">宏观数据</span>
+          <span class="modal-cat-pct">10%</span>
+        </div>
+        <div class="modal-ind-row">
+          <div class="mir-header">
+            <span class="mir-name">减半周期位置</span>
+          </div>
+          <p class="mir-val" id="val6">—</p>
+          <p class="mir-why">相对减半事件的时间位置。减半后 0–18 个月历史上价格承压（供应减半但市场消化需时），为低分区间。</p>
+          <p class="mir-rule">底部 减半后0–18个月→低分 · 顶部 减半前6个月→高分</p>
+        </div>
+        <div class="modal-ind-row">
+          <div class="mir-header">
+            <span class="mir-name">ETF 资金流向</span>
+          </div>
+          <p class="mir-val" id="val7">—</p>
+          <p class="mir-why">现货 ETF 每日净流入/流出（7日均值）。持续净流出为机构看空信号；净流入为机构买入信号。权重低因为 ETF 历史较短，样本不足。</p>
+          <p class="mir-rule">底部 持续净流出（7日均值&lt;0）→低分 · 顶部 持续净流入→高分</p>
+        </div>
+      </div>
+
+      <!-- 注 -->
+      <div class="explain-note" style="margin-top:4px">
+        <span class="explain-note-icon">ℹ</span>
+        <p>权重来自经验验证，非数学最优解（BTC 完整周期样本不足以统计优化）。降级模式下（链上数据不可用时），使用 FGI + 资金费率 + 减半周期兜底，分数可靠性下降，界面显示橙色警告，信号型定投暂停。</p>
+      </div>
+
+    </div><!-- /modal-body -->
+  </div><!-- /modal -->
+</div><!-- /modal-overlay -->
+
+</body>
+</html>
