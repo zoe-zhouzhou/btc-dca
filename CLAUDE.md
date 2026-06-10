@@ -261,30 +261,45 @@ BTCDCA/
 
 ## 下次从哪里继续
 
-**项目完成，待部署。** 下一步只需在 GitHub 上完成以下配置：
+**项目已完成并上线。** 无待办部署任务。
 
-1. **创建 GitHub 仓库**，将整个 `BTCDCA/` 推送到 `main` 分支。
-2. **GitHub Pages 设置**：仓库 Settings → Pages → Source 选 `main` 分支 `/public` 目录。
-3. **GitHub Actions Secrets**：仓库 Settings → Secrets → `GLASSNODE_API_KEY`（必须）、`CRYPTOQUANT_API_KEY`（可选）。
-4. **手动触发一次 workflow**：Actions → Fetch BTC Signals → Run workflow，验证 signals-feed.json 更新成功。
-5. **更新 Skill 配置中的 signals_feed_url**：`install.html` 和 `btc-dca-skill/scripts/fetch-signals.js` 中的 URL 替换为实际 GitHub Pages 地址。
+- **仓库**：https://github.com/zoe-zhouzhou/btc-dca
+- **前端**：https://zoe-zhouzhou.github.io/btc-dca/
+- **GitHub Actions**：每日 UTC 00:00 自动更新 `docs/signals-feed.json`，已验证正常运行
 
-### Session 8 完成情况（2026-06-06）
+**日常维护：**
+- Puell Multiple / NUPL / 交易所储备每 1–2 周手动更新一次（从 LookIntoBitcoin 或 Glassnode 查值），直接修改 `docs/signals-feed.json` 对应字段后 `git push`
+- 信号数据自动更新（MVRV / FGI / 资金费率 / 价格 / ETF估算）由 GitHub Actions 每日拉取
+
+### Session 8 完成情况（2026-06-06 ~ 2026-06-10）
 
 **新增文件：**
-- `scripts/fetch-signals.js`：GitHub Actions 每日数据采集脚本，拉取 Glassnode / FGI / Binance / ETF 数据，支持降级模式，写入 `docs/signals-feed.json`
-- `.github/workflows/fetch-signals.yml`：每日 UTC 00:00（北京 08:00）触发，支持 `workflow_dispatch` 手动触发，有变更才 commit
+- `scripts/fetch-signals.js`：GitHub Actions 每日数据采集脚本，全免费数据源（CoinMetrics Community / alternative.me / Binance / Bybit），支持降级模式，写入 `docs/signals-feed.json`
+- `.github/workflows/fetch-signals.yml`：每日 UTC 00:00（北京 08:00）触发，支持 `workflow_dispatch` 手动触发，有变更才 commit，Node.js 22
 
 **Bug 修复：**
 - `btc-dca-skill/SKILL.md`：Step 1 解码脚本由扁平写入改为嵌套 `strategy` 对象格式，与 `check-triggers.js` / `analyze.js` 期望格式一致
 - `btc-dca-skill/SKILL.md`：skill name 从 `btc-dca` 改为 `btc-dca-skill`（与文件夹名一致）
 - `btc-dca-skill/SKILL.md`："6位导入码"文案更新为实际 base64url 格式说明
+- `public/` → `docs/`：GitHub Pages 仅支持 `/` 或 `/docs` 路径，迁移后才能正常部署
+- `fetch-signals.js`：CoinMetrics 需要 `User-Agent` header；响应格式为 flat array `data[{asset, time, CapMVRVCur}]`，非 `data.btc`
+- 数据源全面替换：原付费 Glassnode API → 免费 CoinMetrics Community（MVRV） + Binance（价格/资金费率） + alternative.me（FGI）
 
 **联调验证：**
 - 完整脚本链（fetch-signals → check-triggers → deliver）本地联调通过
 - 导入码编解码往返验证通过（strategy.js ↔ SKILL.md Node 脚本）
 - log-trade.js、analyze.js 正常运行
 - 前端 localStorage 传参链路验证：questionnaire → persona → strategy → install 均正确
+- GitHub Actions 手动触发验证通过（2026-06-10，7 秒完成）
+
+**部署结果：**
+- 仓库：https://github.com/zoe-zhouzhou/btc-dca
+- Pages：https://zoe-zhouzhou.github.io/btc-dca/（已验证可访问）
+- Actions：每日 cron 已配置，首次手动触发成功
+
+**慢变指标（无免费 API，手动维护）：**
+- Puell Multiple / NUPL / 交易所储备保留上次已知值，每 1–2 周人工更新
+- 当前值（2026-06-07）：Puell=0.79，NUPL=0.28，reserves=decreasing
 
 ### Session 6 完成情况
 
@@ -351,7 +366,7 @@ BTCDCA/
 
 **修复方案：** 全部 6 个 HTML 页面（index / questionnaire / persona / strategy / install / backtest）的 `<header>` 块改为内联 `style=""` 属性，使用硬编码 hex 值，彻底脱离 CSS 加载依赖。
 
-**修改文件：** `public/index.html`、`public/questionnaire.html`、`public/persona.html`、`public/strategy.html`、`public/install.html`、`public/backtest.html`（均只改 `<header>` 块，其余内容不变）
+**修改文件：** `docs/index.html`、`docs/questionnaire.html`、`docs/persona.html`、`docs/strategy.html`、`docs/install.html`、`docs/backtest.html`（均只改 `<header>` 块，其余内容不变）
 
 ---
 
@@ -375,7 +390,7 @@ BTCDCA/
 
 ## 设计规范
 
-> 完整 CSS 变量和组件样式见 [`public/styles/design-system.css`](./public/styles/design-system.css)
+> 完整 CSS 变量和组件样式见 [`docs/styles/design-system.css`](./docs/styles/design-system.css)
 
 ### 设计气质
 
@@ -442,7 +457,7 @@ font-family: 'Noto Sans SC', -apple-system, 'PingFang SC', 'Helvetica Neue', san
 ### 文件结构规范
 
 ```
-public/
+docs/
 ├── styles/
 │   └── design-system.css   ← 所有 CSS 变量 + 通用组件（新页面直接 @import）
 ├── css/
