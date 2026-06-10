@@ -377,22 +377,25 @@ function detectSignalForBacktest(idx, data) {
   const looseCount  = knownScores.filter(s => s <= 40).length;
   const strictCount = knownScores.filter(s => s <= 25).length;
 
-  // 极端底部 — 标准路径：score≤17 + MVRV-Z≤-0.15 + FGI<7 + Puell<0.5
-  // 阈值从-0.3调整为-0.15：ETF机构化后链上最低仅+0.32，-0.3过于苛刻
-  if (score <= 17 && mvrvZ <= -0.15 && fgiVal < 7 && puell < 0.5) return 'extreme';
-  // 极端底部 — ETF纪元备选路径（MVRV-Z 不要求为负，适用本轮熊市）
+  // 注：backtest 的 mvrvZ 为自定义 Z-like 值 = (mvrv_ratio - 1.8) / 0.7
+  // 与 signals.js 中 MVRV ratio 阈值的对应关系（ratio → Z-like）：
+  //   0.85 → -1.36,  1.0 → -1.14,  1.2 → -0.86,  1.5 → -0.43
+
+  // 极端底部 — 标准路径：MVRV ratio<0.85（Z<-1.36）对应链上深度亏损（2022年底水平）
+  if (score <= 17 && mvrvZ < -1.36 && fgiVal < 7 && puell < 0.5) return 'extreme';
+  // 极端底部 — ETF纪元备选路径（机构买盘托底，MVRV ratio 不跌破 0.85）
   if (score <= 15 && fgiVal < 7 && puell < 0.5) return 'extreme';
 
-  // 准极端 — 标准路径：score≤22 + MVRV-Z<0.4 + NUPL<0 + FGI<12
-  if (score <= 22 && mvrvZ < 0.4 && nupl < 0 && fgiVal < 12) return 'quasi';
+  // 准极端 — 标准路径：MVRV ratio<1.0（Z<-1.14）对应市值低于已实现市值
+  if (score <= 22 && mvrvZ < -1.14 && nupl < 0 && fgiVal < 12) return 'quasi';
   // 准极端 — ETF纪元备选路径
   if (score <= 20 && fgiVal < 12) return 'quasi';
 
-  // 加速信号：score≤30 + strictNeed 项严格低分 + MVRV-Z<0.4 + FGI<15
-  if (score <= 30 && strictCount >= strictNeed && mvrvZ < 0.4 && fgiVal < 15) return 'accel';
+  // 加速信号：MVRV ratio<1.2（Z<-0.86）对应接近已实现市值
+  if (score <= 30 && strictCount >= strictNeed && mvrvZ < -0.86 && fgiVal < 15) return 'accel';
 
-  // 普通信号：score≤28 + looseNeed 项宽松低分 + MVRV-Z<0.5
-  if (score <= 28 && looseCount >= looseNeed && mvrvZ < 0.5) return 'normal';
+  // 普通信号：MVRV ratio<1.5（Z<-0.43）对应估值偏低
+  if (score <= 28 && looseCount >= looseNeed && mvrvZ < -0.43) return 'normal';
 
   return 'none';
 }

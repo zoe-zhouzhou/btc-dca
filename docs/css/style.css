@@ -326,6 +326,14 @@ body {
   color: var(--t2);
   line-height: 1.55;
 }
+.ind-card-date {
+  font-size: 10.5px;
+  color: var(--t3);
+  margin-top: 3px;
+}
+.ind-card-date.stale {
+  color: var(--amber);
+}
 
 /* ── Price Ticker ── */
 .price-ticker {

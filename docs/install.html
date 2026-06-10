@@ -75,11 +75,11 @@
       <div class="i-step">
         <div class="i-step-num">1</div>
         <div class="i-step-body">
-          <div class="i-step-title">克隆项目</div>
+          <div class="i-step-title">安装 Skill</div>
+          <div class="i-step-desc">一行命令下载 Skill 并安装依赖，无需克隆整个仓库：</div>
           <div class="i-code-block">
-            <code>git clone https://github.com/你的用户名/btc-dca.git
-cd btc-dca/btc-dca-skill</code>
-            <button class="i-copy-btn" data-copy="git clone https://github.com/你的用户名/btc-dca.git&#10;cd btc-dca/btc-dca-skill">复制</button>
+            <code>npx degit zoe-zhouzhou/btc-dca/btc-dca-skill ~/skills/btc-dca-skill && npm install --prefix ~/skills/btc-dca-skill</code>
+            <button class="i-copy-btn" data-copy="npx degit zoe-zhouzhou/btc-dca/btc-dca-skill ~/skills/btc-dca-skill && npm install --prefix ~/skills/btc-dca-skill">复制</button>
           </div>
         </div>
       </div>
@@ -90,8 +90,8 @@ cd btc-dca/btc-dca-skill</code>
           <div class="i-step-title">启动 Skill 对话</div>
           <div class="i-step-desc">Skill 检测到未初始化，会自动引导你完成安装：设置预算、配置推送渠道、建立每日定时检测。</div>
           <div class="i-code-block">
-            <code>openclaw chat --skill ./SKILL.md</code>
-            <button class="i-copy-btn" data-copy="openclaw chat --skill ./SKILL.md">复制</button>
+            <code>openclaw chat --skill ~/skills/btc-dca-skill/SKILL.md</code>
+            <button class="i-copy-btn" data-copy="openclaw chat --skill ~/skills/btc-dca-skill/SKILL.md">复制</button>
           </div>
           <!-- 导入码 widget，安装对话中需要用到 -->
           <div id="iOcCodeSlot"><!-- iCodeWidget 初始在此 --></div>
@@ -118,11 +118,11 @@ cd btc-dca/btc-dca-skill</code>
       <div class="i-step">
         <div class="i-step-num">1</div>
         <div class="i-step-body">
-          <div class="i-step-title">克隆项目，进入 Skill 目录</div>
+          <div class="i-step-title">安装 Skill</div>
+          <div class="i-step-desc">一行命令下载 Skill 并安装依赖：</div>
           <div class="i-code-block">
-            <code>git clone https://github.com/你的用户名/btc-dca.git
-cd btc-dca/btc-dca-skill</code>
-            <button class="i-copy-btn" data-copy="git clone https://github.com/你的用户名/btc-dca.git&#10;cd btc-dca/btc-dca-skill">复制</button>
+            <code>npx degit zoe-zhouzhou/btc-dca/btc-dca-skill ~/.claude/skills/btc-dca-skill && npm install --prefix ~/.claude/skills/btc-dca-skill</code>
+            <button class="i-copy-btn" data-copy="npx degit zoe-zhouzhou/btc-dca/btc-dca-skill ~/.claude/skills/btc-dca-skill && npm install --prefix ~/.claude/skills/btc-dca-skill">复制</button>
           </div>
         </div>
       </div>
@@ -131,10 +131,10 @@ cd btc-dca/btc-dca-skill</code>
         <div class="i-step-num">2</div>
         <div class="i-step-body">
           <div class="i-step-title">启动 Skill 对话</div>
-          <div class="i-step-desc">Skill 检测到未初始化，引导你完成配置：输入导入码、设置预算、配置 Telegram Bot。</div>
+          <div class="i-step-desc">在 Claude Code 中输入以下斜杠命令，Skill 检测到未初始化后会自动引导你完成配置：输入导入码、设置预算、配置 Telegram Bot。</div>
           <div class="i-code-block">
-            <code>claude --skill ./SKILL.md</code>
-            <button class="i-copy-btn" data-copy="claude --skill ./SKILL.md">复制</button>
+            <code>/btc-dca-skill</code>
+            <button class="i-copy-btn" data-copy="/btc-dca-skill">复制</button>
           </div>
           <!-- 导入码 widget 移入此处（切换平台时） -->
           <div id="iCcCodeSlot"></div>

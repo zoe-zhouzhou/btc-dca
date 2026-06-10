@@ -40,6 +40,9 @@
   <div class="alert" id="alertStale">
     ⏰ 信号数据超过 48 小时未更新，信号型定投建议暂停。
   </div>
+  <div class="alert" id="alertSlowVars">
+    📊 Puell / NUPL 数据已 <span id="slowVarsDays">?</span> 天未更新，以上信号评估可能偏差，建议手动核实后再执行信号型定投。
+  </div>
 
   <div class="section-label">当前市场状态</div>
   <div class="market-module">
@@ -93,52 +96,60 @@
     <!-- ── 8 Indicator Cards ── -->
     <div class="ind-grid" id="indGrid">
       <div class="ind-card" id="ic0">
-        <div class="ind-card-label">MVRV-Z Score</div>
+        <div class="ind-card-label">MVRV ratio</div>
         <div class="ind-card-status sk" id="ics0">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb0" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd0"></div>
+        <div class="ind-card-date" id="icdate0"></div>
       </div>
       <div class="ind-card" id="ic1">
         <div class="ind-card-label">Puell Multiple</div>
         <div class="ind-card-status sk" id="ics1">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb1" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd1"></div>
+        <div class="ind-card-date" id="icdate1"></div>
       </div>
       <div class="ind-card" id="ic2">
         <div class="ind-card-label">NUPL</div>
         <div class="ind-card-status sk" id="ics2">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb2" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd2"></div>
+        <div class="ind-card-date" id="icdate2"></div>
       </div>
       <div class="ind-card" id="ic3">
         <div class="ind-card-label">交易所储备量</div>
         <div class="ind-card-status sk" id="ics3">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb3" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd3"></div>
+        <div class="ind-card-date" id="icdate3"></div>
       </div>
       <div class="ind-card" id="ic4">
         <div class="ind-card-label">恐慌贪婪指数</div>
         <div class="ind-card-status sk" id="ics4">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb4" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd4"></div>
+        <div class="ind-card-date" id="icdate4"></div>
       </div>
       <div class="ind-card" id="ic5">
         <div class="ind-card-label">资金费率</div>
         <div class="ind-card-status sk" id="ics5">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb5" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd5"></div>
+        <div class="ind-card-date" id="icdate5"></div>
       </div>
       <div class="ind-card" id="ic6">
         <div class="ind-card-label">减半周期</div>
         <div class="ind-card-status sk" id="ics6">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb6" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd6"></div>
+        <div class="ind-card-date" id="icdate6"></div>
       </div>
       <div class="ind-card" id="ic7">
         <div class="ind-card-label">ETF 资金流向</div>
         <div class="ind-card-status sk" id="ics7">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb7" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd7"></div>
+        <div class="ind-card-date" id="icdate7"></div>
       </div>
     </div>
 
@@ -209,7 +220,7 @@
           <div class="db-name">极端抄底池</div>
         </div>
         <div class="db-pct">30%</div>
-        <div class="db-desc">触发：周期分≤20 且 MVRV-Z≤0 且 FGI&lt;10，分两批出击</div>
+        <div class="db-desc">触发：周期分≤22 且 MVRV ratio&lt;1.0 且 FGI&lt;12，单次出击</div>
       </div>
     </div>
 
@@ -285,7 +296,7 @@
   <details class="sources">
     <summary>查看数据来源</summary>
     <div class="src-list">
-      <div class="src-item"><span class="src-metric">MVRV-Z Score</span><span class="src-origin">Glassnode（备用：CoinMetrics）</span></div>
+      <div class="src-item"><span class="src-metric">MVRV ratio</span><span class="src-origin">CoinMetrics CapMVRVCur（免费 API）</span></div>
       <div class="src-item"><span class="src-metric">Puell Multiple</span><span class="src-origin">Glassnode（备用：LookIntoBitcoin）</span></div>
       <div class="src-item"><span class="src-metric">NUPL / SOPR</span><span class="src-origin">Glassnode（备用：LookIntoBitcoin）</span></div>
       <div class="src-item"><span class="src-metric">交易所储备量</span><span class="src-origin">Glassnode（备用：CryptoQuant）</span></div>
@@ -317,7 +328,7 @@ function activeZone(score) {
 }
 
 function phaseHeadline(score) {
-  if (score < 25) return '当前市场处于极端底部区间，历史级别的建仓窗口正在开启。链上多项指标同时发出底部信号，信号型定投应全速运行。';
+  if (score < 25) return '当前市场处于极端底部区间，历史级别的建仓窗口正在开启。请在策略页面确认各信号触发状态，按系统指引执行三池弹药部署。';
   if (score < 45) return '当前市场处于熊市积累区间，多项链上指标显示估值偏低。这是历史上建仓回报较为可观的时期，建议开始定投。';
   if (score < 70) return '当前市场处于震荡中性区间，链上信号无明确方向。建议维持时间型定投节奏，暂停信号型定投，等待更明确的低估信号出现。';
   return '当前市场处于高估预警区间，多项指标显示估值偏高。建议放缓新建仓节奏，保护已有仓位，接近退出条件时需重新评估策略。';
@@ -389,6 +400,11 @@ function renderDashboard(d) {
 
   if (isDataStale(d.updated_at)) document.getElementById('alertStale').classList.add('show');
   if (d.degraded)                document.getElementById('alertDegraded').classList.add('show');
+  const freshness = checkSlowVarsFreshness(d);
+  if (freshness.stale) {
+    document.getElementById('slowVarsDays').textContent = freshness.daysSince;
+    document.getElementById('alertSlowVars').classList.add('show');
+  }
 
   const score = computeCycleScore(d);
 
@@ -455,10 +471,22 @@ function renderDashboard(d) {
     halvingStatus(d.halving_cycle?.months_since_halving),
     etfStatus(d.etf_flow?.['7d_avg_usd_m']),
   ];
+  const indUpdatedAt = [
+    d.mvrv_z?.updated_at,
+    d.puell_multiple?.updated_at,
+    d.nupl?.updated_at,
+    d.exchange_reserves?.updated_at,
+    d.fgi?.updated_at,
+    d.funding_rate?.updated_at,
+    d.halving_cycle?.updated_at,
+    d.etf_flow?.updated_at,
+  ];
+  const todayStr = new Date().toISOString().slice(0, 10);
   indStatuses.forEach((st, i) => {
     const statusEl = document.getElementById('ics' + i);
     const barEl    = document.getElementById('icb' + i);
     const descEl   = document.getElementById('icd' + i);
+    const dateEl   = document.getElementById('icdate' + i);
     if (!statusEl) return;
     statusEl.classList.remove('sk');
     statusEl.textContent = st.text;
@@ -468,6 +496,22 @@ function renderDashboard(d) {
       requestAnimationFrame(() => { barEl.style.width = scores[i] + '%'; });
     }
     if (descEl) descEl.textContent = st.desc;
+    if (dateEl) {
+      const ua = indUpdatedAt[i];
+      if (ua) {
+        const isToday = ua === todayStr;
+        const daysDiff = Math.floor((Date.now() - new Date(ua).getTime()) / 86400000);
+        let label;
+        if (isToday) {
+          label = '今日更新';
+        } else {
+          const [, mm, dd] = ua.split('-');
+          label = `更新于 ${parseInt(mm)}/${parseInt(dd)}`;
+        }
+        dateEl.textContent = label;
+        dateEl.className = 'ind-card-date' + (daysDiff > 14 ? ' stale' : '');
+      }
+    }
   });
 
   /* 原始值填充弹窗 */
@@ -703,11 +747,11 @@ document.addEventListener('DOMContentLoaded', function () {
             <span class="pw-item-pct">30%</span>
           </div>
           <p class="pw-item-body">
-            为那些<strong>一年只出现一两次的历史级别底部</strong>预留弹药。触发条件故意设得严苛（MVRV-Z≤0 + FGI&lt;10 + 周期分≤20），防止频繁误触；一旦满足，分两批全力出击，最大化这种罕见机会的建仓效率。
+            为那些<strong>一年只出现一两次的历史级别底部</strong>预留弹药。触发条件故意设得严苛（MVRV ratio&lt;1.0 + FGI&lt;12 + 周期分≤22，四项全满足），防止频繁误触；一旦满足，单次集中出击，最大化这种罕见机会的建仓效率。
           </p>
           <div class="pw-item-trigger">
             <span class="pw-trigger-label">触发条件</span>
-            <span>周期分≤20 且 MVRV-Z≤0 且 FGI&lt;10（连续 7 天）</span>
+            <span>周期分≤22 且 MVRV ratio&lt;1.0 且 NUPL&lt;0 且 FGI&lt;12</span>
           </div>
         </div>
 
@@ -768,7 +812,7 @@ document.addEventListener('DOMContentLoaded', function () {
       <h3 class="modal-section-title">各指标当前状态</h3>
       <div class="modal-ind-chips">
         <div class="ind-chip-row">
-          <span class="ind-chip-name">MVRV-Z（市值实现市值比）</span>
+          <span class="ind-chip-name">MVRV ratio（市值实现市值比）</span>
           <span class="mic-weight">25%</span>
           <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar0"></div></div>
           <span class="ind-chip-score sk" id="chipScore0">—</span>
@@ -827,11 +871,11 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
         <div class="modal-ind-row">
           <div class="mir-header">
-            <span class="mir-name">MVRV-Z Score（市值实现市值比）</span>
+            <span class="mir-name">MVRV ratio（市值实现市值比）</span>
           </div>
           <p class="mir-val" id="val0">—</p>
-          <p class="mir-why">链上估值核心指标，衡量市值相对实现市值的标准差偏离。负值或接近零为历史底部特征，历史三次熊市底部均出现此信号，可靠性最高。</p>
-          <p class="mir-rule">底部 &lt;0→0分，0–2→线性 · 顶部 &gt;7→100分</p>
+          <p class="mir-why">链上估值核心指标，衡量当前市值相对"已实现市值"（全市场持仓的平均成本基础）的倍数。低于 1.0 表示市场整体账面亏损，是历史底部的强烈信号。</p>
+          <p class="mir-rule">底部 &lt;0.7→0分，0.7–3.5→线性 · 顶部 &gt;3.5→100分</p>
         </div>
         <div class="modal-ind-row">
           <div class="mir-header">

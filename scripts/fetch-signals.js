@@ -29,8 +29,9 @@ const HALVING_DATE = new Date('2024-04-19T00:00:00Z');
 // ── 归一化工具（0=低估，100=高估）─────────────────────────────────────────
 function clamp01(v, lo, hi) { return Math.max(0, Math.min(1, (v - lo) / (hi - lo))); }
 
-// MVRV ratio 历史范围：~0.5（极端底部）到 ~8（极端顶部）
-function normalizeMvrv(v)   { return Math.round(clamp01(v, 0.5, 8)    * 100); }
+// MVRV ratio DCA 决策区间：~0.7（深度底部，所有持仓大幅亏损）到 ~3.5（牛市高位）
+// 注：使用 DCA 相关区间而非全历史极值（历史最高 8+），避免牛顶极值把正常低估区压得过低
+function normalizeMvrv(v)   { return Math.round(clamp01(v, 0.7, 3.5)  * 100); }
 // Puell Multiple：~0.3（底部）到 ~4（顶部）
 function normalizePuell(v)  { return Math.round(clamp01(v, 0.3, 4)    * 100); }
 // NUPL：-0.3（底部）到 +0.75（顶部）
@@ -186,9 +187,10 @@ async function main() {
   const priceNow = binance?.currentPrice ?? existing?.current_price ?? null;
 
   // 慢变指标：保留上次已知值（Puell / NUPL / 交易所储备每周手动更新或后续接入数据源时替换）
-  const puellVal = existing?.puell_multiple?.value  ?? 1.0;
-  const nuplVal  = existing?.nupl?.value            ?? 0.0;
-  const resTrend = existing?.exchange_reserves?.trend ?? 'stable';
+  const puellVal         = existing?.puell_multiple?.value    ?? 1.0;
+  const nuplVal          = existing?.nupl?.value              ?? 0.0;
+  const resTrend         = existing?.exchange_reserves?.trend ?? 'stable';
+  const slowVarsUpdatedAt = existing?.slow_vars_updated_at    ?? today;
 
   // ETF 流向估算
   const price7dAgo = mvrvData?.price7dAgo ?? existing?.current_price ?? null;
@@ -209,18 +211,19 @@ async function main() {
 
   const feed = {
     updated_at:        today,
-    mvrv_z:            { value: parseFloat(mvrvVal.toFixed(4)),   normalized_score: ns.mvrv_z },
-    puell_multiple:    { value: parseFloat(puellVal.toFixed(4)),  normalized_score: ns.puell_multiple },
-    nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl },
-    exchange_reserves: { trend: resTrend,                          normalized_score: ns.exchange_reserves },
-    fgi:               { value: fgiVal, label: fgiLabel,           normalized_score: ns.fgi },
-    funding_rate:      { value: parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, normalized_score: ns.funding_rate },
-    halving_cycle:     { months_since_halving: halving.months_since_halving, normalized_score: ns.halving_cycle },
-    etf_flow:          { '7d_avg_usd_m': etfAvg,                  normalized_score: ns.etf_flow },
-    current_price:     priceNow,
-    cycle_score:       cycleScore,
+    mvrv_z:            { value: parseFloat(mvrvVal.toFixed(4)),   normalized_score: ns.mvrv_z,             updated_at: today },
+    puell_multiple:    { value: parseFloat(puellVal.toFixed(4)),  normalized_score: ns.puell_multiple,    updated_at: slowVarsUpdatedAt },
+    nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl,               updated_at: slowVarsUpdatedAt },
+    exchange_reserves: { trend: resTrend,                          normalized_score: ns.exchange_reserves, updated_at: slowVarsUpdatedAt },
+    fgi:               { value: fgiVal, label: fgiLabel,           normalized_score: ns.fgi,               updated_at: today },
+    funding_rate:      { value: parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, normalized_score: ns.funding_rate, updated_at: today },
+    halving_cycle:     { months_since_halving: halving.months_since_halving, normalized_score: ns.halving_cycle, updated_at: today },
+    etf_flow:          { '7d_avg_usd_m': etfAvg,                  normalized_score: ns.etf_flow,          updated_at: today },
+    current_price:        priceNow,
+    cycle_score:          cycleScore,
+    slow_vars_updated_at: slowVarsUpdatedAt,
     degraded,
-    degraded_reason:   degradedReason,
+    degraded_reason:      degradedReason,
   };
 
   await writeFile(OUTPUT, JSON.stringify(feed, null, 2), 'utf8');

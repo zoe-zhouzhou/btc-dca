@@ -237,8 +237,8 @@ function entryTimingDesc(cycleScore, entryThreshold, personaName, signal) {
   const signalMap = {
     extreme: `当前还触发了极端底部信号，历史上这是最稀少的买入窗口，建议在基础定投之外动用极端池弹药。`,
     quasi:   `当前还触发了准极端信号，可在基础定投之外动用极端池 20%，单次执行。`,
-    accel:   `当前还触发了加速信号，可在基础定投之外追加信号池 15% 建仓。`,
-    normal:  `当前触发了普通信号，可在基础定投之外追加信号池 10% 建仓。`,
+    accel:   `当前还触发了加速信号，可在基础定投之外追加信号池 10% 建仓。`,
+    normal:  `当前触发了普通信号，可在基础定投之外追加信号池 6% 建仓。`,
     none:    `当前无强信号，按基础节奏开始即可，不需要等待更低的价格。`,
   };
 
@@ -291,7 +291,7 @@ function evaluateAllSignalLevels(data) {
       conditions: [
         { text: '周期分 ≤ 28',              value: `当前 ${score}`,                          met: score <= 28 },
         { text: '8 指标中 5 项以上低估',    value: `当前 ${looseCount}/8 项归一化分 ≤ 40`, met: looseCount >= 5 },
-        { text: 'MVRV-Z < 0.5',            value: `当前 ${mvrzVal.toFixed(2)}`,             met: mvrzVal < 0.5 },
+        { text: 'MVRV ratio < 1.5',          value: `当前 ${mvrzVal.toFixed(2)}`,             met: mvrzVal < 1.5 },
       ],
     },
     {
@@ -305,7 +305,7 @@ function evaluateAllSignalLevels(data) {
       conditions: [
         { text: '周期分 ≤ 30',              value: `当前 ${score}`,                           met: score <= 30 },
         { text: '8 指标中 7 项严格低估',    value: `当前 ${strictCount}/8 项归一化分 ≤ 25`, met: strictCount >= 7 },
-        { text: 'MVRV-Z < 0.4',            value: `当前 ${mvrzVal.toFixed(2)}`,              met: mvrzVal < 0.4 },
+        { text: 'MVRV ratio < 1.2',          value: `当前 ${mvrzVal.toFixed(2)}`,              met: mvrzVal < 1.2 },
         { text: 'FGI < 15',                value: `当前 ${fgiVal}`,                          met: fgiVal < 15 },
       ],
     },
@@ -319,7 +319,7 @@ function evaluateAllSignalLevels(data) {
       note:        '4 项全部满足触发；或 ETF纪元备选：周期分≤20 且 FGI<12',
       conditions: [
         { text: '周期分 ≤ 22',              value: `当前 ${score}`,               met: score <= 22 },
-        { text: 'MVRV-Z < 0.4',            value: `当前 ${mvrzVal.toFixed(2)}`,   met: mvrzVal < 0.4 },
+        { text: 'MVRV ratio < 1.0',          value: `当前 ${mvrzVal.toFixed(2)}`,   met: mvrzVal < 1.0 },
         { text: 'NUPL < 0（持仓整体亏损）', value: `当前 ${nuplVal.toFixed(2)}`,   met: nuplVal < 0 },
         { text: 'FGI < 12',                value: `当前 ${fgiVal}`,               met: fgiVal < 12 },
       ],
@@ -334,7 +334,7 @@ function evaluateAllSignalLevels(data) {
       note:        '4 项全部满足触发；或 ETF纪元备选：周期分≤15 且 FGI<7 且 Puell<0.5',
       conditions: [
         { text: '周期分 ≤ 17',              value: `当前 ${score}`,               met: score <= 17 },
-        { text: 'MVRV-Z ≤ -0.15',         value: `当前 ${mvrzVal.toFixed(2)}`,   met: mvrzVal <= -0.15 },
+        { text: 'MVRV ratio < 0.85',       value: `当前 ${mvrzVal.toFixed(2)}`,   met: mvrzVal < 0.85 },
         { text: 'FGI < 7',                 value: `当前 ${fgiVal}`,               met: fgiVal < 7 },
         { text: 'Puell Multiple < 0.5',    value: `当前 ${puellVal.toFixed(2)}`,  met: puellVal < 0.5 },
       ],
@@ -413,7 +413,7 @@ function historicalWindowDesc(score) {
   if (score < 25) {
     return {
       range:   '7–14 个月',
-      context: '基于过去三轮熊市，完整熊市底部阶段（周期分 0–45）持续约 7–14 个月（2015 年约 14 个月、2019 年约 7 个月、2022 年约 9 个月）。当前已进入极端底部区（< 25 分），通常是整个底部阶段的最后 3–5 个月，建议优先打出极端池弹药。',
+      context: '基于过去三轮熊市，完整熊市底部阶段（周期分 0–45）持续约 7–14 个月（2015 年约 14 个月、2019 年约 7 个月、2022 年约 9 个月）。当前已进入极端底部区（< 25 分），通常是整个底部阶段的最后 3–5 个月。极端池弹药已进入待命状态，待准极端或极端底部信号条件满足后应优先部署。',
     };
   }
   if (score < 45) {

@@ -2,7 +2,7 @@
  * signals.js — 8指标周期分数计算 (v1.2)
  *
  * 权重分配（分数越低 = 市场越低估）：
- *   MVRV-Z Score    25%   链上估值核心指标
+ *   MVRV ratio      25%   链上估值核心指标（数据源：CoinMetrics CapMVRVCur，MVRV ratio）
  *   Puell Multiple  20%   矿工收入 / 365日均
  *   NUPL / SOPR     15%   未实现净盈亏
  *   交易所储备量    10%   持续下降 = 用户提链
@@ -136,85 +136,85 @@ function detectSignalLevel(data) {
   const looseCount  = scores.filter(s => s <= 40).length;
   const strictCount = scores.filter(s => s <= 25).length;
 
-  // 极端底部 — 标准路径：score≤17 + MVRV-Z≤-0.15 + FGI<7 + Puell<0.5（2022级别）
-  // 阈值从-0.3调整为-0.15：ETF机构化后本轮最低仅+0.32，-0.3仅在2022年FTX崩盘时出现3天
-  if (score <= 17 && mvrzVal <= -0.15 && fgiVal < 7 && puellVal < 0.5) {
+  // 极端底部 — 标准路径：score≤17 + MVRV ratio<0.85 + FGI<7 + Puell<0.5
+  // MVRV ratio < 0.85：市值低于已实现市值 85%，链上深度亏损（类 2022 年底水平）
+  if (score <= 17 && mvrzVal < 0.85 && fgiVal < 7 && puellVal < 0.5) {
     return {
       level: 'extreme', label: '极端底部信号',
       detail: '所有极端条件齐发，历史级别建仓时机',
       conditions: [
         { met: true, text: `周期分 ${score}，进入历史极端底部区（≤ 17）` },
-        { met: true, text: `MVRV-Z ${mvrzVal.toFixed(2)}，链上持仓深度亏损（≤ -0.15）` },
+        { met: true, text: `MVRV ratio ${mvrzVal.toFixed(2)}，链上持仓深度亏损（< 0.85）` },
         { met: true, text: `恐慌贪婪指数 ${fgiVal}/100，极度恐慌（< 7）` },
         { met: true, text: `Puell Multiple ${puellVal.toFixed(2)}，矿工深度亏损期（< 0.5）` },
       ],
     };
   }
 
-  // 极端底部 — ETF纪元备选路径：MVRV-Z 结构性抬底，改用更低周期分替代
-  // 本轮 MVRV-Z 最低仅 +0.32（机构 ETF 买盘托底），标准路径 MVRV-Z 条件可能永远不触发
+  // 极端底部 — ETF纪元备选路径：机构买盘托底使 MVRV ratio 不再跌破 0.85，改用更低周期分替代
   if (score <= 15 && fgiVal < 7 && puellVal < 0.5) {
     return {
       level: 'extreme', label: '极端底部信号（ETF纪元）',
-      detail: '链上估值虽未转负，但周期分极低且市场极度恐慌',
+      detail: '周期分极低且市场极度恐慌，MVRV ratio 因机构买盘维持偏高',
       conditions: [
-        { met: true,  text: `周期分 ${score}，ETF纪元严格极端底部区（≤ 15）` },
-        { met: true,  text: `恐慌贪婪指数 ${fgiVal}/100，极度恐慌（< 7）` },
-        { met: true,  text: `Puell Multiple ${puellVal.toFixed(2)}，矿工深度亏损期（< 0.5）` },
-        { met: false, text: `MVRV-Z ${mvrzVal.toFixed(2)}，ETF纪元结构性高于 -0.15（正常）` },
+        { met: true,          text: `周期分 ${score}，ETF纪元严格极端底部区（≤ 15）` },
+        { met: true,          text: `恐慌贪婪指数 ${fgiVal}/100，极度恐慌（< 7）` },
+        { met: true,          text: `Puell Multiple ${puellVal.toFixed(2)}，矿工深度亏损期（< 0.5）` },
+        { met: mvrzVal < 0.85, text: `MVRV ratio ${mvrzVal.toFixed(2)}${mvrzVal < 0.85 ? '（< 0.85，深度亏损）' : '（≥ 0.85，ETF纪元结构性支撑）'}` },
       ],
     };
   }
 
-  // 准极端 — 标准路径：score≤22 + MVRV-Z<0.4 + NUPL<0 + FGI<12（全满足）
-  if (score <= 22 && mvrzVal < 0.4 && nuplVal < 0 && fgiVal < 12) {
+  // 准极端 — 标准路径：score≤22 + MVRV ratio<1.0 + NUPL<0 + FGI<12
+  // MVRV ratio < 1.0：市值低于已实现市值，市场整体持仓亏损
+  if (score <= 22 && mvrzVal < 1.0 && nuplVal < 0 && fgiVal < 12) {
     return {
       level: 'quasi', label: '准极端信号',
       detail: '多项底部信号共振，建议重点分批建仓',
       conditions: [
         { met: score <= 22,    text: `周期分 ${score}（≤ 22）` },
-        { met: mvrzVal < 0.4,  text: `MVRV-Z ${mvrzVal.toFixed(2)}（< 0.4，链上估值极低）` },
+        { met: mvrzVal < 1.0,  text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.0，市值低于已实现市值）` },
         { met: nuplVal < 0,    text: `NUPL ${nuplVal.toFixed(2)}（< 0，持仓整体亏损）` },
         { met: fgiVal < 12,    text: `恐慌贪婪指数 ${fgiVal}（< 12，极度恐慌）` },
       ],
     };
   }
 
-  // 准极端 — ETF纪元备选路径：MVRV-Z 不要求低于 0.4，改用更低周期分替代
+  // 准极端 — ETF纪元备选路径：机构买盘托底使 MVRV ratio 不跌破 1.0，改用更低周期分替代
   if (score <= 20 && fgiVal < 12) {
     return {
       level: 'quasi', label: '准极端信号（ETF纪元）',
-      detail: '周期分极低且市场极度恐慌，MVRV-Z 因机构买盘维持偏高',
+      detail: '周期分极低且市场极度恐慌，MVRV ratio 因机构买盘维持偏高',
       conditions: [
-        { met: true,  text: `周期分 ${score}，ETF纪元严格准极端区（≤ 20）` },
-        { met: true,  text: `恐慌贪婪指数 ${fgiVal}（< 12，极度恐慌）` },
-        { met: false, text: `MVRV-Z ${mvrzVal.toFixed(2)}，ETF纪元结构性高于 0.4（正常）` },
+        { met: true,          text: `周期分 ${score}，ETF纪元严格准极端区（≤ 20）` },
+        { met: true,          text: `恐慌贪婪指数 ${fgiVal}（< 12，极度恐慌）` },
+        { met: mvrzVal < 1.0, text: `MVRV ratio ${mvrzVal.toFixed(2)}${mvrzVal < 1.0 ? '（< 1.0，持仓亏损）' : '（≥ 1.0，ETF纪元结构性支撑）'}` },
       ],
     };
   }
 
-  // 加速信号：score≤30 + 7+ 项严格低分区 + MVRV-Z<0.4 + FGI<15
-  if (score <= 30 && strictCount >= 7 && mvrzVal < 0.4 && fgiVal < 15) {
+  // 加速信号：score≤30 + 7+ 项严格低分区 + MVRV ratio<1.2 + FGI<15
+  if (score <= 30 && strictCount >= 7 && mvrzVal < 1.2 && fgiVal < 15) {
     return {
       level: 'accel', label: '加速定投信号',
       detail: `${strictCount}/8 项指标深度低估，多重底部信号共振`,
       conditions: [
         { met: score <= 30,      text: `周期分 ${score}（≤ 30）` },
         { met: strictCount >= 7, text: `${strictCount}/8 项归一化分 ≤ 25，深度低估` },
-        { met: mvrzVal < 0.4,    text: `MVRV-Z ${mvrzVal.toFixed(2)}（< 0.4，链上估值极低）` },
+        { met: mvrzVal < 1.2,    text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.2，接近已实现市值）` },
         { met: fgiVal < 15,      text: `恐慌贪婪指数 ${fgiVal}（< 15，极度恐慌）` },
       ],
     };
   }
 
-  // 普通信号：score≤28 + 5+ 项宽松低分区 + MVRV-Z<0.5
+  // 普通信号：score≤28 + 5+ 项宽松低分区 + MVRV ratio<1.5
   const conditionList = [
     { met: score <= 28,      text: `综合周期分 ${score}（≤ 28）` },
     { met: looseCount >= 5,  text: `${looseCount}/8 项指标归一化 ≤ 40，低估共振` },
-    { met: mvrzVal < 0.5,    text: `MVRV-Z ${mvrzVal.toFixed(2)}（< 0.5，链上估值低廉）` },
+    { met: mvrzVal < 1.5,    text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.5，估值偏低）` },
   ];
 
-  if (score <= 28 && looseCount >= 5 && mvrzVal < 0.5) {
+  if (score <= 28 && looseCount >= 5 && mvrzVal < 1.5) {
     return {
       level: 'normal', label: '普通定投信号',
       detail: `市场进入低廉估值区，维持正常定投节奏`,
@@ -227,4 +227,17 @@ function detectSignalLevel(data) {
     detail: '当前估值偏高或中性，保持基础定投节奏',
     conditions: conditionList,
   };
+}
+
+/**
+ * 检查慢变量（Puell / NUPL / 交易所储备）的数据新鲜度
+ * 这三项无免费实时 API，由脚本保留上次已知值；超过 14 天应提示用户手动核实
+ * @param {object} data signals-feed.json 解析结果
+ * @returns {{ stale: boolean, daysSince: number|null }}
+ */
+function checkSlowVarsFreshness(data) {
+  const dateStr = data.slow_vars_updated_at;
+  if (!dateStr) return { stale: false, daysSince: null };
+  const daysSince = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  return { stale: daysSince > 14, daysSince };
 }
