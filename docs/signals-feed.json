@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-06-07",
+  "updated_at": "2026-06-11",
   "mvrv_z": {
-    "value": 1.1346,
+    "value": 1.1488,
     "normalized_score": 16,
-    "updated_at": "2026-06-07"
+    "updated_at": "2026-06-11"
   },
   "puell_multiple": {
     "value": 0.79,
@@ -24,23 +24,23 @@
     "value": 12,
     "label": "Extreme Fear",
     "normalized_score": 12,
-    "updated_at": "2026-06-07"
+    "updated_at": "2026-06-11"
   },
   "funding_rate": {
     "value": 0,
     "trend": "neutral",
     "normalized_score": 50,
-    "updated_at": "2026-06-07"
+    "updated_at": "2026-06-11"
   },
   "halving_cycle": {
     "months_since_halving": 26,
-    "normalized_score": 53,
-    "updated_at": "2026-06-07"
+    "normalized_score": 54,
+    "updated_at": "2026-06-11"
   },
   "etf_flow": {
-    "7d_avg_usd_m": -86,
-    "normalized_score": 41,
-    "updated_at": "2026-06-07"
+    "7d_avg_usd_m": -58,
+    "normalized_score": 44,
+    "updated_at": "2026-06-11"
   },
   "current_price": 75906,
   "cycle_score": 26,
