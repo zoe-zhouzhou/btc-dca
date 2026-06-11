@@ -11,14 +11,14 @@
     "updated_at": "2026-06-07"
   },
   "nupl": {
-    "value": 0.28,
-    "normalized_score": 55,
-    "updated_at": "2026-06-07"
+    "value": 0.13,
+    "normalized_score": 41,
+    "updated_at": "2026-06-11"
   },
   "exchange_reserves": {
-    "trend": "decreasing",
-    "normalized_score": 18,
-    "updated_at": "2026-06-07"
+    "trend": "increasing",
+    "normalized_score": 72,
+    "updated_at": "2026-06-11"
   },
   "fgi": {
     "value": 12,
@@ -42,9 +42,9 @@
     "normalized_score": 44,
     "updated_at": "2026-06-11"
   },
-  "current_price": 75906,
-  "cycle_score": 26,
-  "slow_vars_updated_at": "2026-06-07",
+  "current_price": 61658,
+  "cycle_score": 29,
+  "slow_vars_updated_at": "2026-06-11",
   "degraded": false,
   "degraded_reason": null
 }
