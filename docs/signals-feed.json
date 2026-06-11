@@ -16,8 +16,8 @@
     "updated_at": "2026-06-11"
   },
   "exchange_reserves": {
-    "trend": "increasing",
-    "normalized_score": 72,
+    "btc_amount": 2650601.13253104,
+    "normalized_score": 39,
     "updated_at": "2026-06-11"
   },
   "fgi": {
@@ -43,7 +43,7 @@
     "updated_at": "2026-06-11"
   },
   "current_price": 61658,
-  "cycle_score": 29,
+  "cycle_score": 26,
   "slow_vars_updated_at": "2026-06-11",
   "degraded": false,
   "degraded_reason": null
