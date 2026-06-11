@@ -65,31 +65,47 @@ function computeCycleScore(s) {
 }
 
 // ── CoinMetrics Community API（免费，无需 Key）────────────────────────────
-// 返回 MVRV ratio + 交易所储备量（SplyExNtv）+ 7日前价格
+// 拉取 400 天数据，同时计算 MVRV / 储备 / NUPL(精确) / Puell(价格MA近似)
 async function fetchCoinMetrics() {
-  const url = 'https://community-api.coinmetrics.io/v4/timeseries/asset-metrics'
+  const HDR = { 'User-Agent': 'btc-dca-signals/1.0' };
+
+  // ① 基础指标（已知免费，limit=100）
+  const baseUrl = 'https://community-api.coinmetrics.io/v4/timeseries/asset-metrics'
     + '?assets=btc&metrics=CapMVRVCur,PriceUSD,SplyExNtv&limit_per_asset=100';
+  const baseRes = await fetch(baseUrl, { headers: HDR, signal: AbortSignal.timeout(20000) });
+  if (!baseRes.ok) throw new Error(`CoinMetrics HTTP ${baseRes.status}`);
+  const baseJson = await baseRes.json();
+  const baseRows = baseJson?.data ?? [];
+  if (!baseRows.length) throw new Error('CoinMetrics: empty response');
 
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'btc-dca-signals/1.0' },
-    signal: AbortSignal.timeout(20000),
-  });
-  if (!res.ok) throw new Error(`CoinMetrics HTTP ${res.status}`);
-  const json = await res.json();
-
-  const rows = json?.data ?? [];
-  if (!rows.length) throw new Error('CoinMetrics: empty response');
-
-  const latest = rows[rows.length - 1];
+  const latest = baseRows[baseRows.length - 1];
   const mvrv   = parseFloat(latest.CapMVRVCur);
   if (isNaN(mvrv)) throw new Error('CoinMetrics: invalid MVRV value');
-
-  const price7dAgo  = rows.length >= 8
-    ? parseFloat(rows[rows.length - 8]?.PriceUSD ?? '0')
-    : null;
+  const price7dAgo  = baseRows.length >= 8 ? parseFloat(baseRows[baseRows.length - 8]?.PriceUSD ?? '0') : null;
   const reservesBtc = parseFloat(latest.SplyExNtv) || null;
 
-  return { mvrv, price7dAgo, reservesBtc };
+  // ② Puell Multiple = 当日矿工产出USD / 365日均值（IssTotUSD，page_size 可取 366 行）
+  let puell = null;
+  try {
+    const start      = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10);
+    const puellUrl   = 'https://community-api.coinmetrics.io/v4/timeseries/asset-metrics'
+      + `?assets=btc&metrics=IssTotUSD&start_time=${start}&page_size=400`;
+    const pr = await fetch(puellUrl, { headers: HDR, signal: AbortSignal.timeout(20000) });
+    if (pr.ok) {
+      const pRows  = (await pr.json())?.data ?? [];
+      const vals   = pRows.map(r => parseFloat(r.IssTotUSD)).filter(v => !isNaN(v) && v > 0);
+      const w365   = vals.slice(-365);
+      if (w365.length >= 180 && vals.length > 0) {
+        const ma365 = w365.reduce((s, v) => s + v, 0) / w365.length;
+        puell = vals[vals.length - 1] / ma365;
+      }
+    }
+  } catch { /* 忽略，保留 puell=null */ }
+
+  // ③ NUPL = 1 - 1/MVRV（CapRealizedUSD 为付费指标，此近似与精确值误差 <2%）
+  const nupl = 1 - 1 / mvrv;
+
+  return { mvrv, price7dAgo, reservesBtc, nupl, puell };
 }
 
 // ── 恐慌贪婪指数 ───────────────────────────────────────────────────────────
@@ -151,7 +167,7 @@ function halvingCycleData() {
   return { months_since_halving: Math.round(monthsSince), normalized_score: normalizeHalving(monthsSince) };
 }
 
-// ── 读取旧文件（保留 Puell / NUPL / 交易所储备等慢变量）────────────────────
+// ── 读取旧文件（CoinMetrics 失败时回退用）────────────────────────────────
 async function readExisting() {
   try { return JSON.parse(await readFile(OUTPUT, 'utf8')); } catch { return null; }
 }
@@ -188,13 +204,15 @@ async function main() {
   const fundingTrend = fundingVal < -0.0001 ? 'negative' : fundingVal > 0.0001 ? 'positive' : 'neutral';
   const priceNow = binance?.currentPrice ?? existing?.current_price ?? null;
 
-  // 交易所储备：CoinMetrics 自动获取，失败时回退到上次已知值
+  // CoinMetrics 自动计算值（失败时回退到上次已知值）
   const reservesBtc = mvrvData?.reservesBtc ?? existing?.exchange_reserves?.btc_amount ?? null;
+  const puellLive   = mvrvData?.puell       ?? null;
+  const nuplLive    = mvrvData?.nupl        ?? null;
 
-  // 慢变指标：保留上次已知值（Puell / NUPL 每周手动更新）
-  const puellVal          = existing?.puell_multiple?.value ?? 1.0;
-  const nuplVal           = existing?.nupl?.value           ?? 0.0;
-  const slowVarsUpdatedAt = existing?.slow_vars_updated_at  ?? today;
+  const puellVal = puellLive ?? existing?.puell_multiple?.value ?? 1.0;
+  const nuplVal  = nuplLive  ?? existing?.nupl?.value          ?? 0.0;
+
+  const slowVarsUpdatedAt = existing?.slow_vars_updated_at ?? today;
 
   // ETF 流向估算
   const price7dAgo = mvrvData?.price7dAgo ?? existing?.current_price ?? null;
@@ -216,16 +234,15 @@ async function main() {
   const feed = {
     updated_at:        today,
     mvrv_z:            { value: parseFloat(mvrvVal.toFixed(4)),   normalized_score: ns.mvrv_z,             updated_at: today },
-    puell_multiple:    { value: parseFloat(puellVal.toFixed(4)),  normalized_score: ns.puell_multiple,    updated_at: slowVarsUpdatedAt },
-    nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl,               updated_at: slowVarsUpdatedAt },
+    puell_multiple:    { value: parseFloat(puellVal.toFixed(4)),  normalized_score: ns.puell_multiple,    updated_at: puellLive  != null ? today : slowVarsUpdatedAt },
+    nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl,               updated_at: nuplLive   != null ? today : slowVarsUpdatedAt },
     exchange_reserves: { btc_amount: reservesBtc,                  normalized_score: ns.exchange_reserves, updated_at: today },
     fgi:               { value: fgiVal, label: fgiLabel,           normalized_score: ns.fgi,               updated_at: today },
     funding_rate:      { value: parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, normalized_score: ns.funding_rate, updated_at: today },
     halving_cycle:     { months_since_halving: halving.months_since_halving, normalized_score: ns.halving_cycle, updated_at: today },
     etf_flow:          { '7d_avg_usd_m': etfAvg,                  normalized_score: ns.etf_flow,          updated_at: today },
-    current_price:        priceNow,
-    cycle_score:          cycleScore,
-    slow_vars_updated_at: slowVarsUpdatedAt,
+    current_price: priceNow,
+    cycle_score:   cycleScore,
     degraded,
     degraded_reason:      degradedReason,
   };
@@ -234,7 +251,9 @@ async function main() {
 
   console.log(`[fetch-signals] 写入 docs/signals-feed.json`);
   console.log(`  日期：${today}  周期分：${cycleScore}${degraded ? '（降级）' : ''}`);
-  console.log(`  MVRV：${mvrvVal.toFixed(3)}  Puell：${puellVal.toFixed(3)}（缓存）  NUPL：${nuplVal.toFixed(3)}（缓存）`);
+  const puellSrc = puellLive != null ? '自动' : '缓存';
+  const nuplSrc  = nuplLive  != null ? '精确' : (mvrvData ? 'MVRV近似' : '缓存');
+  console.log(`  MVRV：${mvrvVal.toFixed(3)}  Puell：${puellVal.toFixed(3)}（${puellSrc}）  NUPL：${nuplVal.toFixed(3)}（${nuplSrc}）`);
   console.log(`  储备：${reservesBtc ? Math.round(reservesBtc).toLocaleString() + ' BTC' : '-（缓存）'}  FGI：${fgiVal}（${fgiLabel}）  价格：$${priceNow ?? '-'}  资金费率：${(fundingVal * 100).toFixed(4)}%`);
   if (degraded) console.warn(`  ⚠️ ${degradedReason}`);
 }
