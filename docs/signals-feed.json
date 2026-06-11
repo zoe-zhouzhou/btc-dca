@@ -8,7 +8,7 @@
   "puell_multiple": {
     "value": 0.79,
     "normalized_score": 13,
-    "updated_at": "2026-06-07"
+    "updated_at": "2026-06-11"
   },
   "nupl": {
     "value": 0.13,
@@ -38,8 +38,8 @@
     "updated_at": "2026-06-11"
   },
   "etf_flow": {
-    "7d_avg_usd_m": -58,
-    "normalized_score": 44,
+    "7d_avg_usd_m": -98,
+    "normalized_score": 40,
     "updated_at": "2026-06-11"
   },
   "current_price": 61658,
