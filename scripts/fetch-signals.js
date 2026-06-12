@@ -174,7 +174,8 @@ async function readExisting() {
 
 // ── 主流程 ────────────────────────────────────────────────────────────────
 async function main() {
-  const today    = new Date().toISOString().slice(0, 10);
+  const now      = new Date().toISOString().slice(0, 16) + 'Z'; // 精确到分钟
+  const today    = now.slice(0, 10);
   const existing = await readExisting();
   const halving  = halvingCycleData();
 
@@ -232,7 +233,7 @@ async function main() {
   const cycleScore = computeCycleScore(ns);
 
   const feed = {
-    updated_at:        today,
+    updated_at:        now,
     mvrv_z:            { value: parseFloat(mvrvVal.toFixed(4)),   normalized_score: ns.mvrv_z,             updated_at: today },
     puell_multiple:    { value: parseFloat(puellVal.toFixed(4)),  normalized_score: ns.puell_multiple,    updated_at: puellLive  != null ? today : slowVarsUpdatedAt },
     nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl,               updated_at: nuplLive   != null ? today : slowVarsUpdatedAt },
