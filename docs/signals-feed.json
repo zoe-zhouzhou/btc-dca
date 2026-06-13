@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-13T06:45Z",
+  "updated_at": "2026-06-13T07:47Z",
   "mvrv_z": {
     "value": 1.1878,
     "normalized_score": 17,
@@ -34,7 +34,7 @@
   },
   "halving_cycle": {
     "months_since_halving": 26,
-    "normalized_score": 54,
+    "normalized_score": 31,
     "updated_at": "2026-06-13"
   },
   "etf_flow": {
@@ -43,7 +43,7 @@
     "updated_at": "2026-06-13"
   },
   "current_price": 61658,
-  "cycle_score": 26,
+  "cycle_score": 25,
   "degraded": false,
   "degraded_reason": null
 }
