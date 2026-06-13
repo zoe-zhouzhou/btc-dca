@@ -46,8 +46,13 @@ function normalizeReserves(amount) {
 function normalizeFGI(v)    { return Math.round(clamp01(v, 0, 100)    * 100); }
 // 资金费率：-0.1%（做空，底部）到 +0.1%（做多，顶部）
 function normalizeFunding(v){ return Math.round(clamp01(v, -0.001, 0.001) * 100); }
-// 减半周期：0–48 个月，0–18 个月为底部积累窗口
-function normalizeHalving(m){ return Math.round(clamp01(m, 0, 48)     * 100); }
+// 减半周期分段线性：牛顶在 ~15 个月，熊底在 ~30 个月
+// 0→15月: 30→85（减半后上涨期）；15→30月: 85→10（牛顶→熊底）；30→48月: 10→45（复苏期）
+function normalizeHalving(m) {
+  if (m < 15) return Math.round(30 + clamp01(m, 0,  15) * 55);
+  if (m < 30) return Math.round(85 - clamp01(m, 15, 30) * 75);
+  return             Math.round(10 + clamp01(m, 30, 48) * 35);
+}
 // ETF 7日均流向：-500M（流出）到 +500M（流入）
 function normalizeEtfFlow(m){ return Math.round(clamp01(m, -500, 500) * 100); }
 
