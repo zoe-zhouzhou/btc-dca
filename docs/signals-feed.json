@@ -1,22 +1,22 @@
 {
-  "updated_at": "2026-06-13T02:08Z",
+  "updated_at": "2026-06-13T06:45Z",
   "mvrv_z": {
-    "value": 1.1875,
+    "value": 1.1878,
     "normalized_score": 17,
     "updated_at": "2026-06-13"
   },
   "puell_multiple": {
-    "value": 0.6398,
-    "normalized_score": 9,
+    "value": 0.6976,
+    "normalized_score": 11,
     "updated_at": "2026-06-13"
   },
   "nupl": {
-    "value": 0.1579,
+    "value": 0.1581,
     "normalized_score": 44,
     "updated_at": "2026-06-13"
   },
   "exchange_reserves": {
-    "btc_amount": 2651105.57611883,
+    "btc_amount": 2647487.736623,
     "normalized_score": 39,
     "updated_at": "2026-06-13"
   },
@@ -38,12 +38,12 @@
     "updated_at": "2026-06-13"
   },
   "etf_flow": {
-    "7d_avg_usd_m": -89,
+    "7d_avg_usd_m": -87,
     "normalized_score": 41,
     "updated_at": "2026-06-13"
   },
   "current_price": 61658,
   "cycle_score": 26,
-  "degraded": true,
-  "degraded_reason": "CoinMetrics 不可用（CoinMetrics: invalid MVRV value），使用降级数据源"
+  "degraded": false,
+  "degraded_reason": null
 }
