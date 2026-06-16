@@ -44,8 +44,9 @@ function normalizeReserves(amount) {
 }
 // FGI：0（极恐）到 100（极贪）
 function normalizeFGI(v)    { return Math.round(clamp01(v, 0, 100)    * 100); }
-// 资金费率：-0.1%（做空，底部）到 +0.1%（做多，顶部）
-function normalizeFunding(v){ return Math.round(clamp01(v, -0.001, 0.001) * 100); }
+// 资金费率：-0.05%（做空，底部）到 +0.05%（做多，顶部）
+// 实际 BTC 日常区间 ±0.03%，±0.05% 足以覆盖极端；原 ±0.1% 区分度过低
+function normalizeFunding(v){ return Math.round(clamp01(v, -0.0005, 0.0005) * 100); }
 // 减半周期分段线性：牛顶在 ~15 个月，熊底在 ~30 个月
 // 0→15月: 30→85（减半后上涨期）；15→30月: 85→10（牛顶→熊底）；30→48月: 10→45（复苏期）
 function normalizeHalving(m) {
@@ -206,8 +207,11 @@ async function main() {
   const mvrvVal  = mvrvData?.mvrv  ?? existing?.mvrv_z?.value         ?? 1.0;
   const fgiVal   = fgi?.value      ?? existing?.fgi?.value            ?? 50;
   const fgiLabel = fgi?.label      ?? existing?.fgi?.label            ?? 'Neutral';
-  const fundingVal = binance?.fundingRate ?? existing?.funding_rate?.value ?? 0;
-  const fundingTrend = fundingVal < -0.0001 ? 'negative' : fundingVal > 0.0001 ? 'positive' : 'neutral';
+  // null = 数据获取失败，与真实 0% 区分；归一化时用 50（中性），不污染缓存
+  const fundingRaw   = binance?.fundingRate ?? null;
+  const fundingFailed = fundingRaw === null;
+  const fundingVal   = fundingRaw ?? 0;   // 计算用，fallback 0 → 归一化 50（中性）
+  const fundingTrend = fundingFailed ? 'unknown' : fundingVal < -0.0001 ? 'negative' : fundingVal > 0.0001 ? 'positive' : 'neutral';
   const priceNow = binance?.currentPrice ?? existing?.current_price ?? null;
 
   // CoinMetrics 自动计算值（失败时回退到上次已知值）
@@ -244,7 +248,7 @@ async function main() {
     nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl,               updated_at: nuplLive   != null ? today : slowVarsUpdatedAt },
     exchange_reserves: { btc_amount: reservesBtc,                  normalized_score: ns.exchange_reserves, updated_at: today },
     fgi:               { value: fgiVal, label: fgiLabel,           normalized_score: ns.fgi,               updated_at: today },
-    funding_rate:      { value: parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, normalized_score: ns.funding_rate, updated_at: today },
+    funding_rate:      { value: fundingFailed ? null : parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, normalized_score: ns.funding_rate, updated_at: today },
     halving_cycle:     { months_since_halving: halving.months_since_halving, normalized_score: ns.halving_cycle, updated_at: today },
     etf_flow:          { '7d_avg_usd_m': etfAvg,                  normalized_score: ns.etf_flow,          updated_at: today },
     current_price: priceNow,
@@ -260,7 +264,8 @@ async function main() {
   const puellSrc = puellLive != null ? '自动' : '缓存';
   const nuplSrc  = nuplLive  != null ? '精确' : (mvrvData ? 'MVRV近似' : '缓存');
   console.log(`  MVRV：${mvrvVal.toFixed(3)}  Puell：${puellVal.toFixed(3)}（${puellSrc}）  NUPL：${nuplVal.toFixed(3)}（${nuplSrc}）`);
-  console.log(`  储备：${reservesBtc ? Math.round(reservesBtc).toLocaleString() + ' BTC' : '-（缓存）'}  FGI：${fgiVal}（${fgiLabel}）  价格：$${priceNow ?? '-'}  资金费率：${(fundingVal * 100).toFixed(4)}%`);
+  const fundingStr = fundingFailed ? '获取失败（用50中性）' : `${(fundingVal * 100).toFixed(4)}%`;
+  console.log(`  储备：${reservesBtc ? Math.round(reservesBtc).toLocaleString() + ' BTC' : '-（缓存）'}  FGI：${fgiVal}（${fgiLabel}）  价格：$${priceNow ?? '-'}  资金费率：${fundingStr}`);
   if (degraded) console.warn(`  ⚠️ ${degradedReason}`);
 }
 
