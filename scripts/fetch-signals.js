@@ -71,9 +71,9 @@ function normalizeMA200(m) {
 
 function computeCycleScore(s) {
   return Math.round(
-    s.mvrv_ratio        * 0.20 +  // 原 0.25，200dMA 承接部分估值权重
+    s.mvrv_ratio        * 0.25 +
     s.puell_multiple    * 0.20 +
-    s.adr_act           * 0.15 +
+    s.adr_act           * 0.10 +
     s.exchange_reserves * 0.10 +
     s.fgi               * 0.15 +
     s.funding_rate      * 0.05 +

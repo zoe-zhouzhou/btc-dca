@@ -145,7 +145,7 @@
         <div class="ind-card-date" id="icdate6"></div>
       </div>
       <div class="ind-card" id="ic7">
-        <div class="ind-card-label">ETF 资金流向</div>
+        <div class="ind-card-label">200 日均线乘数</div>
         <div class="ind-card-status sk" id="ics7">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb7" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd7"></div>
@@ -784,7 +784,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       <!-- 设计原则 -->
       <p class="modal-lead">
-        设计原则：<strong>链上数据为主、情绪数据为辅、宏观数据作背景。</strong>MVRV-Z 和 Puell Multiple 占最大比重，因为它们基于区块链原始数据，不容易被操纵，历史预测精度也最高。FGI 虽然直观，但反应滞后且容易被情绪放大，权重适当降低。归一化的关键是把每个指标都映射到同一把尺子上——<strong>分数越低代表越靠近底部，越应该买入</strong>，最终加权平均出来的综合分就有了统一的方向感。
+        设计原则：<strong>链上数据为主、情绪数据为辅、宏观趋势作背景。</strong>MVRV ratio（25%）和 Puell Multiple（20%）占最大比重，因为它们基于区块链原始数据，不容易被操纵，历史预测精度最高。FGI 虽然直观，但反应滞后且容易被情绪放大，权重适当降低。归一化的关键是把每个指标都映射到同一把尺子上——<strong>分数越低代表越靠近底部，越应该买入</strong>，最终加权平均出来的综合分就有了统一的方向感。
       </p>
 
       <!-- 三类树 -->
@@ -795,7 +795,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="cat-row">
           <div class="cat-box cat-box--onchain">
             <div class="cat-label">链上数据</div>
-            <div class="cat-weight">70%</div>
+            <div class="cat-weight">65%</div>
             <div class="cat-items">MVRV ratio · Puell Multiple · 活跃地址比率 · 交易所储备量</div>
           </div>
           <div class="cat-box cat-box--sentiment">
@@ -805,8 +805,8 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
           <div class="cat-box cat-box--macro">
             <div class="cat-label">宏观数据</div>
-            <div class="cat-weight">10%</div>
-            <div class="cat-items">减半周期 · ETF 资金流向</div>
+            <div class="cat-weight">15%</div>
+            <div class="cat-items">减半周期 · 200 日均线乘数</div>
           </div>
         </div>
         <div class="cat-row">
@@ -833,7 +833,7 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
         <div class="ind-chip-row">
           <span class="ind-chip-name">活跃地址比率（链上活跃度/年均）</span>
-          <span class="mic-weight">15%</span>
+          <span class="mic-weight">10%</span>
           <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar2"></div></div>
           <span class="ind-chip-score sk" id="chipScore2">—</span>
         </div>
@@ -862,8 +862,8 @@ document.addEventListener('DOMContentLoaded', function () {
           <span class="ind-chip-score sk" id="chipScore6">—</span>
         </div>
         <div class="ind-chip-row">
-          <span class="ind-chip-name">ETF 资金流向</span>
-          <span class="mic-weight">5%</span>
+          <span class="ind-chip-name">200 日均线乘数（价格/200日均）</span>
+          <span class="mic-weight">10%</span>
           <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar7"></div></div>
           <span class="ind-chip-score sk" id="chipScore7">—</span>
         </div>
@@ -871,11 +871,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
       <!-- 8 项指标详情（按三大分类分组） -->
       <h3 class="modal-section-title">8 项指标详情</h3>
-      <!-- 链上数据 70% -->
+      <!-- 链上数据 65% -->
       <div class="modal-cat-group">
         <div class="modal-cat-header">
           <span class="modal-cat-name">链上数据</span>
-          <span class="modal-cat-pct">70%</span>
+          <span class="modal-cat-pct">65%</span>
         </div>
         <div class="modal-ind-row">
           <div class="mir-header">
@@ -935,11 +935,11 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
       </div>
 
-      <!-- 宏观数据 10% -->
+      <!-- 宏观数据 15% -->
       <div class="modal-cat-group">
         <div class="modal-cat-header">
           <span class="modal-cat-name">宏观数据</span>
-          <span class="modal-cat-pct">10%</span>
+          <span class="modal-cat-pct">15%</span>
         </div>
         <div class="modal-ind-row">
           <div class="mir-header">
@@ -951,11 +951,11 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
         <div class="modal-ind-row">
           <div class="mir-header">
-            <span class="mir-name">ETF 资金流向</span>
+            <span class="mir-name">200 日均线乘数（当前价 ÷ 200 日均价）</span>
           </div>
           <p class="mir-val" id="val7">—</p>
-          <p class="mir-why">现货 ETF 每日净流入/流出（7日均值）。持续净流出为机构看空信号；净流入为机构买入信号。权重低因为 ETF 历史较短，样本不足。</p>
-          <p class="mir-rule">底部 持续净流出（7日均值&lt;0）→低分 · 顶部 持续净流入→高分</p>
+          <p class="mir-why">当前价格与 200 日移动平均线的比值。低于 1.0 表示价格跌破长期均线，历史上是强力买入区。相比 MVRV 基于链上成本，200dMA 基于价格趋势，两者从不同角度衡量低估程度。</p>
+          <p class="mir-rule">底部 &lt;0.6×→0分 · 顶部 &gt;4.0×→100分（对数归一化）</p>
         </div>
       </div>
 

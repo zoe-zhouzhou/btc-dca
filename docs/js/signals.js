@@ -2,9 +2,9 @@
  * signals.js — 8指标周期分数计算 (v1.2)
  *
  * 权重分配（分数越低 = 市场越低估）：
- *   MVRV ratio      20%   链上估值核心指标（数据源：CoinMetrics CapMVRVCur）
+ *   MVRV ratio      25%   链上估值核心指标（数据源：CoinMetrics CapMVRVCur）
  *   Puell Multiple  20%   矿工收入 / 365日均（CoinMetrics IssTotUSD）
- *   活跃地址比率   15%   链上活跃度 / 365日均（CoinMetrics AdrActCnt）
+ *   活跃地址比率   10%   链上活跃度 / 365日均（CoinMetrics AdrActCnt）
  *   交易所储备量   10%   持续下降 = 用户提链（CoinMetrics SplyExNtv）
  *   恐慌贪婪指数   15%   市场情绪综合指标（Alternative.me）
  *   资金费率        5%   永续合约资金费率（OKX/Binance/Bybit）
