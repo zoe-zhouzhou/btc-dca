@@ -3,7 +3,7 @@
  * fetch-signals.js — GitHub Actions 每日数据采集脚本（全免费数据源）
  *
  * 数据来源（均免费，无需 API Key）：
- *   CoinMetrics Community API — MVRV ratio（归一化为 MVRV-Z 近似值）
+ *   CoinMetrics Community API — MVRV Ratio（CapMVRVCur = 市值/已实现市值）
  *   alternative.me           — 恐慌贪婪指数
  *   Binance / Bybit API      — 现价 + 资金费率
  *   本地计算                  — 减半周期位置
@@ -59,7 +59,7 @@ function normalizeEtfFlow(m){ return Math.round(clamp01(m, -500, 500) * 100); }
 
 function computeCycleScore(s) {
   return Math.round(
-    s.mvrv_z            * 0.25 +
+    s.mvrv_ratio        * 0.25 +
     s.puell_multiple    * 0.20 +
     s.nupl              * 0.15 +
     s.exchange_reserves * 0.10 +
@@ -217,7 +217,7 @@ async function main() {
   }
 
   // 实时可得
-  const mvrvVal  = mvrvData?.mvrv  ?? existing?.mvrv_z?.value         ?? 1.0;
+  const mvrvVal  = mvrvData?.mvrv  ?? existing?.mvrv_ratio?.value      ?? 1.0;
   const fgiVal   = fgi?.value      ?? existing?.fgi?.value            ?? 50;
   const fgiLabel = fgi?.label      ?? existing?.fgi?.label            ?? 'Neutral';
   // live fetch → 缓存值 → 0（中性兜底），stale 标记来源
@@ -244,7 +244,7 @@ async function main() {
   const etfAvg     = estimateEtfFlow(fgiVal, priceNow, price7dAgo);
 
   const ns = {
-    mvrv_z:            normalizeMvrv(mvrvVal),
+    mvrv_ratio:        normalizeMvrv(mvrvVal),
     puell_multiple:    normalizePuell(puellVal),
     nupl:              normalizeNupl(nuplVal),
     exchange_reserves: normalizeReserves(reservesBtc),
@@ -258,7 +258,7 @@ async function main() {
 
   const feed = {
     updated_at:        now,
-    mvrv_z:            { value: parseFloat(mvrvVal.toFixed(4)),   normalized_score: ns.mvrv_z,             updated_at: today },
+    mvrv_ratio:        { value: parseFloat(mvrvVal.toFixed(4)),   normalized_score: ns.mvrv_ratio,         updated_at: today },
     puell_multiple:    { value: parseFloat(puellVal.toFixed(4)),  normalized_score: ns.puell_multiple,    updated_at: puellLive  != null ? today : slowVarsUpdatedAt },
     nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl,               updated_at: nuplLive   != null ? today : slowVarsUpdatedAt },
     exchange_reserves: { btc_amount: reservesBtc,                  normalized_score: ns.exchange_reserves, updated_at: today },

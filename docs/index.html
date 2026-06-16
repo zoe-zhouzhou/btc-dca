@@ -446,7 +446,7 @@ function renderDashboard(d) {
 
   /* 8 indicators: chips (main page) + badges (modal) */
   const scores = [
-    d.mvrv_z?.normalized_score            ?? 50,
+    d.mvrv_ratio?.normalized_score            ?? 50,
     d.puell_multiple?.normalized_score    ?? 50,
     d.nupl?.normalized_score              ?? 50,
     d.exchange_reserves?.normalized_score ?? 50,
@@ -462,7 +462,7 @@ function renderDashboard(d) {
 
   /* 8 指标卡片 */
   const indStatuses = [
-    mvrvStatus(d.mvrv_z?.value),
+    mvrvStatus(d.mvrv_ratio?.value),
     puellStatus(d.puell_multiple?.value),
     nuplStatus(d.nupl?.value),
     reserveStatus(d.exchange_reserves?.trend),
@@ -472,7 +472,7 @@ function renderDashboard(d) {
     etfStatus(d.etf_flow?.['7d_avg_usd_m']),
   ];
   const indUpdatedAt = [
-    d.mvrv_z?.updated_at,
+    d.mvrv_ratio?.updated_at,
     d.puell_multiple?.updated_at,
     d.nupl?.updated_at,
     d.exchange_reserves?.updated_at,
@@ -517,7 +517,7 @@ function renderDashboard(d) {
   /* 原始值填充弹窗 */
   const frVal = d.funding_rate?.value;
   const etfVal = d.etf_flow?.['7d_avg_usd_m'];
-  setVal(0, '当前值  ', d.mvrv_z?.value?.toFixed(2) ?? '—');
+  setVal(0, '当前值  ', d.mvrv_ratio?.value?.toFixed(2) ?? '—');
   setVal(1, '当前值  ', d.puell_multiple?.value?.toFixed(2) ?? '—');
   setVal(2, '当前值  ', d.nupl?.value !== undefined ? d.nupl.value.toFixed(3) : '—');
   setVal(3, '趋势    ', d.exchange_reserves?.trend === 'decreasing' ? '持续减少 ↓' : d.exchange_reserves?.trend === 'increasing' ? '持续增加 ↑' : (d.exchange_reserves?.trend ?? '—'));

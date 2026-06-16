@@ -260,13 +260,13 @@ function entryTimingDesc(cycleScore, entryThreshold, personaName, signal) {
  */
 function evaluateAllSignalLevels(data) {
   const score    = computeCycleScore(data);
-  const mvrzVal  = data.mvrv_z?.value           ?? 999;
+  const mvrzVal  = data.mvrv_ratio?.value        ?? 999;
   const nuplVal  = data.nupl?.value             ?? 0;
   const fgiVal   = data.fgi?.value              ?? 50;
   const puellVal = data.puell_multiple?.value   ?? 999;
 
   const normScores = [
-    data.mvrv_z?.normalized_score            ?? 50,
+    data.mvrv_ratio?.normalized_score         ?? 50,
     data.puell_multiple?.normalized_score    ?? 50,
     data.nupl?.normalized_score              ?? 50,
     data.exchange_reserves?.normalized_score ?? 50,
