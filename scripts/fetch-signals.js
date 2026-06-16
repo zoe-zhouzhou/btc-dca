@@ -38,8 +38,12 @@ function normalizePuell(v) {
   const lo = Math.log(0.3), hi = Math.log(4.0);
   return Math.round(clamp01(Math.log(Math.max(v, 0.01)), lo, hi) * 100);
 }
-// NUPL：-0.3（底部）到 +0.75（顶部）
-function normalizeNupl(v)   { return Math.round(clamp01(v, -0.3, 0.75)* 100); }
+// 活跃地址比率 = AdrActCnt / 365日均值，对数归一化
+// 0.5（熊市底部，用户大量离场）→ 0，2.0（牛市顶部，涌入）→ 100
+function normalizeAdrAct(ratio) {
+  const lo = Math.log(0.5), hi = Math.log(2.0);
+  return Math.round(clamp01(Math.log(Math.max(ratio, 0.01)), lo, hi) * 100);
+}
 // 交易所储备量（BTC）：历史区间 180万–320万
 // 储量低 = 牛市持仓 = 高位；储量高 = 熊市抛售 = 低位 → 方向反转
 function normalizeReserves(amount) {
@@ -69,7 +73,7 @@ function computeCycleScore(s) {
   return Math.round(
     s.mvrv_ratio        * 0.20 +  // 原 0.25，200dMA 承接部分估值权重
     s.puell_multiple    * 0.20 +
-    s.nupl              * 0.15 +
+    s.adr_act           * 0.15 +
     s.exchange_reserves * 0.10 +
     s.fgi               * 0.15 +
     s.funding_rate      * 0.05 +
@@ -99,11 +103,11 @@ async function fetchCoinMetrics() {
   const reservesBtc = parseFloat(latest.SplyExNtv) || null;
 
   // ② Puell Multiple + 200日均线（同一请求，节省 API 调用）
-  let puell = null, ma200 = null;
+  let puell = null, ma200 = null, adrActRatio = null;
   try {
     const start    = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10);
     const puellUrl = 'https://community-api.coinmetrics.io/v4/timeseries/asset-metrics'
-      + `?assets=btc&metrics=IssTotUSD,PriceUSD&start_time=${start}&page_size=400`;
+      + `?assets=btc&metrics=IssTotUSD,PriceUSD,AdrActCnt&start_time=${start}&page_size=400`;
     const pr = await fetch(puellUrl, { headers: HDR, signal: AbortSignal.timeout(20000) });
     if (pr.ok) {
       const pRows = (await pr.json())?.data ?? [];
@@ -122,13 +126,18 @@ async function fetchCoinMetrics() {
       if (w200.length >= 150) {
         ma200 = w200.reduce((s, v) => s + v, 0) / w200.length;
       }
+
+      // 活跃地址比率
+      const addrs   = pRows.map(r => parseFloat(r.AdrActCnt)).filter(v => !isNaN(v) && v > 0);
+      const adrW365 = addrs.slice(-365);
+      if (adrW365.length >= 180 && addrs.length > 0) {
+        const adrMA = adrW365.reduce((s, v) => s + v, 0) / adrW365.length;
+        adrActRatio = addrs[addrs.length - 1] / adrMA;
+      }
     }
   } catch { /* 忽略，保留 puell/ma200=null */ }
 
-  // ③ NUPL = 1 - 1/MVRV（数学精确推导，非近似）
-  const nupl = 1 - 1 / mvrv;
-
-  return { mvrv, price7dAgo, reservesBtc, nupl, puell, ma200 };
+  return { mvrv, price7dAgo, reservesBtc, puell, ma200, adrActRatio };
 }
 
 // ── 恐慌贪婪指数 ───────────────────────────────────────────────────────────
@@ -240,12 +249,12 @@ async function main() {
 
   // CoinMetrics 自动计算值（失败时回退到上次已知值）
   const reservesBtc = mvrvData?.reservesBtc ?? existing?.exchange_reserves?.btc_amount ?? null;
-  const puellLive   = mvrvData?.puell       ?? null;
-  const nuplLive    = mvrvData?.nupl        ?? null;
-  const ma200Live   = mvrvData?.ma200       ?? null;
+  const puellLive    = mvrvData?.puell        ?? null;
+  const ma200Live    = mvrvData?.ma200        ?? null;
+  const adrActLive   = mvrvData?.adrActRatio  ?? null;
 
-  const puellVal = puellLive ?? existing?.puell_multiple?.value ?? 1.0;
-  const nuplVal  = nuplLive  ?? existing?.nupl?.value          ?? 0.0;
+  const puellVal   = puellLive  ?? existing?.puell_multiple?.value ?? 1.0;
+  const adrActVal  = adrActLive ?? existing?.adr_act?.ratio        ?? 1.0;
 
   const slowVarsUpdatedAt = existing?.slow_vars_updated_at ?? today;
 
@@ -256,7 +265,7 @@ async function main() {
   const ns = {
     mvrv_ratio:        normalizeMvrv(mvrvVal),
     puell_multiple:    normalizePuell(puellVal),
-    nupl:              normalizeNupl(nuplVal),
+    adr_act:           normalizeAdrAct(adrActVal),
     exchange_reserves: normalizeReserves(reservesBtc),
     fgi:               normalizeFGI(fgiVal),
     funding_rate:      normalizeFunding(fundingVal),
@@ -270,7 +279,7 @@ async function main() {
     updated_at:        now,
     mvrv_ratio:        { value: parseFloat(mvrvVal.toFixed(4)),   normalized_score: ns.mvrv_ratio,         updated_at: today },
     puell_multiple:    { value: parseFloat(puellVal.toFixed(4)),  normalized_score: ns.puell_multiple,    updated_at: puellLive  != null ? today : slowVarsUpdatedAt },
-    nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl,               updated_at: nuplLive   != null ? today : slowVarsUpdatedAt },
+    adr_act:           { ratio: adrActLive ? parseFloat(adrActVal.toFixed(3)) : null, normalized_score: ns.adr_act, updated_at: adrActLive != null ? today : (existing?.adr_act?.updated_at ?? today) },
     exchange_reserves: { btc_amount: reservesBtc,                  normalized_score: ns.exchange_reserves, updated_at: today },
     fgi:               { value: fgiVal, label: fgiLabel,           normalized_score: ns.fgi,               updated_at: today },
     funding_rate:      { value: fundingFailed ? null : parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, stale: fundingStale, normalized_score: ns.funding_rate, updated_at: today },
@@ -286,9 +295,9 @@ async function main() {
 
   console.log(`[fetch-signals] 写入 docs/signals-feed.json`);
   console.log(`  日期：${today}  周期分：${cycleScore}${degraded ? '（降级）' : ''}`);
-  const puellSrc = puellLive != null ? '自动' : '缓存';
-  const nuplSrc  = nuplLive  != null ? '精确' : (mvrvData ? 'MVRV近似' : '缓存');
-  console.log(`  MVRV：${mvrvVal.toFixed(3)}  Puell：${puellVal.toFixed(3)}（${puellSrc}）  NUPL：${nuplVal.toFixed(3)}（${nuplSrc}）`);
+  const puellSrc  = puellLive   != null ? '自动' : '缓存';
+  const adrActSrc = adrActLive  != null ? '自动' : '缓存';
+  console.log(`  MVRV：${mvrvVal.toFixed(3)}  Puell：${puellVal.toFixed(3)}（${puellSrc}）  活跃地址比率：${adrActVal.toFixed(3)}（${adrActSrc}）`);
   const fundingStr = fundingFailed ? '获取失败（中性50）' : `${(fundingVal * 100).toFixed(4)}%${fundingStale ? '（缓存）' : ''}`;
   const ma200Str   = ma200Mult ? `×${ma200Mult.toFixed(3)}（MA=$${Math.round(ma200Val).toLocaleString()}）` : '无数据（中性）';
   console.log(`  储备：${reservesBtc ? Math.round(reservesBtc).toLocaleString() + ' BTC' : '-（缓存）'}  FGI：${fgiVal}（${fgiLabel}）  价格：$${priceNow ?? '-'}  资金费率：${fundingStr}`);

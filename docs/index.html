@@ -41,7 +41,7 @@
     ⏰ 信号数据超过 48 小时未更新，信号型定投建议暂停。
   </div>
   <div class="alert" id="alertSlowVars">
-    📊 Puell / NUPL 数据已 <span id="slowVarsDays">?</span> 天未更新，以上信号评估可能偏差，建议手动核实后再执行信号型定投。
+    📊 Puell Multiple 数据已 <span id="slowVarsDays">?</span> 天未更新，以上信号评估可能偏差，建议手动核实后再执行信号型定投。
   </div>
 
   <div class="section-label">当前市场状态</div>
@@ -110,7 +110,7 @@
         <div class="ind-card-date" id="icdate1"></div>
       </div>
       <div class="ind-card" id="ic2">
-        <div class="ind-card-label">NUPL</div>
+        <div class="ind-card-label">活跃地址比率</div>
         <div class="ind-card-status sk" id="ics2">—</div>
         <div class="ind-bar-track"><div class="ind-bar-fill" id="icb2" style="width:0%"></div></div>
         <div class="ind-card-desc" id="icd2"></div>
@@ -298,12 +298,12 @@
     <div class="src-list">
       <div class="src-item"><span class="src-metric">MVRV ratio</span><span class="src-origin">CoinMetrics CapMVRVCur（免费 API）</span></div>
       <div class="src-item"><span class="src-metric">Puell Multiple</span><span class="src-origin">Glassnode（备用：LookIntoBitcoin）</span></div>
-      <div class="src-item"><span class="src-metric">NUPL / SOPR</span><span class="src-origin">Glassnode（备用：LookIntoBitcoin）</span></div>
+      <div class="src-item"><span class="src-metric">活跃地址比率</span><span class="src-origin">CoinMetrics AdrActCnt（免费 API）</span></div>
       <div class="src-item"><span class="src-metric">交易所储备量</span><span class="src-origin">Glassnode（备用：CryptoQuant）</span></div>
       <div class="src-item"><span class="src-metric">恐慌贪婪指数</span><span class="src-origin">Alternative.me</span></div>
       <div class="src-item"><span class="src-metric">资金费率</span><span class="src-origin">Binance / Bybit 公开 API</span></div>
       <div class="src-item"><span class="src-metric">减半周期</span><span class="src-origin">本地计算（固定减半日期）</span></div>
-      <div class="src-item"><span class="src-metric">ETF 资金流向</span><span class="src-origin">GitHub Actions 每日拉取</span></div>
+      <div class="src-item"><span class="src-metric">200日均线乘数</span><span class="src-origin">CoinMetrics PriceUSD（免费 API）</span></div>
     </div>
   </details>
 
@@ -448,7 +448,7 @@ function renderDashboard(d) {
   const scores = [
     d.mvrv_ratio?.normalized_score            ?? 50,
     d.puell_multiple?.normalized_score    ?? 50,
-    d.nupl?.normalized_score              ?? 50,
+    d.adr_act?.normalized_score           ?? 50,
     d.exchange_reserves?.normalized_score ?? 50,
     d.fgi?.normalized_score               ?? 50,
     d.funding_rate?.normalized_score      ?? 50,
@@ -464,7 +464,7 @@ function renderDashboard(d) {
   const indStatuses = [
     mvrvStatus(d.mvrv_ratio?.value),
     puellStatus(d.puell_multiple?.value),
-    nuplStatus(d.nupl?.value),
+    adrActStatus(d.adr_act?.ratio),
     reserveStatus(d.exchange_reserves?.btc_amount),
     fgiStatus(d.fgi?.value),
     frStatus(d.funding_rate?.value),
@@ -474,7 +474,7 @@ function renderDashboard(d) {
   const indUpdatedAt = [
     d.mvrv_ratio?.updated_at,
     d.puell_multiple?.updated_at,
-    d.nupl?.updated_at,
+    d.adr_act?.updated_at,
     d.exchange_reserves?.updated_at,
     d.fgi?.updated_at,
     d.funding_rate?.updated_at,
@@ -520,7 +520,7 @@ function renderDashboard(d) {
   const ma200v  = d.ma_200d?.ma_value;
   setVal(0, '当前值  ', d.mvrv_ratio?.value?.toFixed(2) ?? '—');
   setVal(1, '当前值  ', d.puell_multiple?.value?.toFixed(2) ?? '—');
-  setVal(2, '当前值  ', d.nupl?.value !== undefined ? d.nupl.value.toFixed(3) : '—');
+  setVal(2, '活跃地址比率  ', d.adr_act?.ratio != null ? d.adr_act.ratio.toFixed(3) : '—');
   setVal(3, '储备量  ', d.exchange_reserves?.btc_amount != null ? Math.round(d.exchange_reserves.btc_amount).toLocaleString() + ' BTC' : '—');
   setVal(4, '当前值  ', (d.fgi?.value ?? '—') + (d.fgi?.label ? '  ·  ' + d.fgi.label : ''));
   setVal(5, '当前费率  ', frVal != null ? frVal + '% / 8h' : '—');
@@ -544,12 +544,13 @@ function puellStatus(val) {
   if (val < 2)   return { text: '正常 ' + val.toFixed(2), cls: 'amber', desc: '矿工收益正常' };
   return         { text: '矿工高收益 ' + val.toFixed(2), cls: 'red', desc: '矿工收益远超均值，顶部特征' };
 }
-function nuplStatus(val) {
-  if (val === null || val === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
-  if (val < 0)    return { text: '市场整体亏损', cls: 'green', desc: '历史底部特征，持仓者平均处于亏损' };
-  if (val < 0.25) return { text: '早期复苏', cls: 'amber', desc: '整体轻微盈利，仍有建仓空间' };
-  if (val < 0.5)  return { text: '中性乐观', cls: 'amber', desc: '盈利区间扩大，估值趋于正常' };
-  return          { text: '贪婪区', cls: 'red', desc: '持仓者大幅盈利，估值偏高' };
+function adrActStatus(ratio) {
+  if (ratio === null || ratio === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  if (ratio < 0.7)  return { text: '活跃度极低 ×' + ratio.toFixed(2), cls: 'green', desc: '链上活跃地址远低于年均，市场萧条，底部特征' };
+  if (ratio < 0.9)  return { text: '活跃度偏低 ×' + ratio.toFixed(2), cls: 'green', desc: '活跃地址低于年均，市场降温，适合布局' };
+  if (ratio < 1.2)  return { text: '活跃度正常 ×' + ratio.toFixed(2), cls: 'amber', desc: '接近年均水平，市场参与度中性' };
+  if (ratio < 1.6)  return { text: '活跃度偏高 ×' + ratio.toFixed(2), cls: 'amber', desc: '活跃地址高于年均，市场热度上升' };
+  return            { text: '活跃度过热 ×' + ratio.toFixed(2), cls: 'red', desc: '链上活跃远超年均，牛市高热，顶部信号' };
 }
 function reserveStatus(btcAmount) {
   if (btcAmount === null || btcAmount === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
@@ -754,11 +755,11 @@ document.addEventListener('DOMContentLoaded', function () {
             <span class="pw-item-pct">30%</span>
           </div>
           <p class="pw-item-body">
-            为那些<strong>一年只出现一两次的历史级别底部</strong>预留弹药。触发条件故意设得严苛（MVRV ratio&lt;1.0 + FGI&lt;12 + 周期分≤22，四项全满足），防止频繁误触；一旦满足，单次集中出击，最大化这种罕见机会的建仓效率。
+            为那些<strong>一年只出现一两次的历史级别底部</strong>预留弹药。触发条件故意设得严苛（周期分≤22 + MVRV ratio&lt;1.0 + FGI&lt;12，三项全满足），防止频繁误触；一旦满足，单次集中出击，最大化这种罕见机会的建仓效率。
           </p>
           <div class="pw-item-trigger">
             <span class="pw-trigger-label">触发条件</span>
-            <span>周期分≤22 且 MVRV ratio&lt;1.0 且 NUPL&lt;0 且 FGI&lt;12</span>
+            <span>周期分≤22 且 MVRV ratio&lt;1.0 且 FGI&lt;12（三项全满足）</span>
           </div>
         </div>
 
@@ -795,7 +796,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="cat-box cat-box--onchain">
             <div class="cat-label">链上数据</div>
             <div class="cat-weight">70%</div>
-            <div class="cat-items">MVRV-Z · Puell Multiple · NUPL · 交易所储备量</div>
+            <div class="cat-items">MVRV ratio · Puell Multiple · 活跃地址比率 · 交易所储备量</div>
           </div>
           <div class="cat-box cat-box--sentiment">
             <div class="cat-label">市场情绪</div>
@@ -831,7 +832,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <span class="ind-chip-score sk" id="chipScore1">—</span>
         </div>
         <div class="ind-chip-row">
-          <span class="ind-chip-name">NUPL（未实现净利润）</span>
+          <span class="ind-chip-name">活跃地址比率（链上活跃度/年均）</span>
           <span class="mic-weight">15%</span>
           <div class="ind-chip-bar-track"><div class="ind-chip-bar-fill" id="chipBar2"></div></div>
           <span class="ind-chip-score sk" id="chipScore2">—</span>
@@ -894,11 +895,11 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
         <div class="modal-ind-row">
           <div class="mir-header">
-            <span class="mir-name">NUPL / SOPR（未实现净利润/亏损）</span>
+            <span class="mir-name">活跃地址比率（链上活跃地址/年均）</span>
           </div>
           <p class="mir-val" id="val2">—</p>
-          <p class="mir-why">未实现净盈亏比率。负值意味着市场整体亏损，为历史底部特征。与 MVRV-Z 互补，从全市场盈亏角度双重验证估值。</p>
-          <p class="mir-rule">底部 &lt;−0.25→0分 · 顶部 &gt;0.75→100分</p>
+          <p class="mir-why">当日链上活跃地址数 ÷ 365日均值。低于 1.0 表示市场参与度下降，链上活动萎缩，历史上底部区间的常见特征。与 MVRV ratio 互补：前者量化估值高低，后者量化市场活跃度高低。</p>
+          <p class="mir-rule">底部 &lt;0.5→0分 · 顶部 &gt;2.0→100分（对数归一化）</p>
         </div>
         <div class="modal-ind-row">
           <div class="mir-header">
@@ -921,7 +922,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <span class="mir-name">恐慌贪婪指数 FGI（Fear &amp; Greed Index）</span>
           </div>
           <p class="mir-val" id="val4">—</p>
-          <p class="mir-why">综合交易量、波动率、社交媒体情绪等多维度。极度恐慌（&lt;25）往往是入场时机，但反应滞后，需链上数据佐证，权重不超过 NUPL。</p>
+          <p class="mir-why">综合交易量、波动率、社交媒体情绪等多维度。极度恐慌（&lt;25）往往是入场时机，但反应滞后，需链上数据佐证，权重不超过活跃地址比率。</p>
           <p class="mir-rule">底部 0–25极度恐慌→直接映射 · 顶部 75–100极度贪婪</p>
         </div>
         <div class="modal-ind-row">

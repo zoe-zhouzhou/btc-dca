@@ -2,14 +2,14 @@
  * signals.js — 8指标周期分数计算 (v1.2)
  *
  * 权重分配（分数越低 = 市场越低估）：
- *   MVRV ratio      25%   链上估值核心指标（数据源：CoinMetrics CapMVRVCur，MVRV ratio）
- *   Puell Multiple  20%   矿工收入 / 365日均
- *   NUPL / SOPR     15%   未实现净盈亏
- *   交易所储备量    10%   持续下降 = 用户提链
- *   恐慌贪婪指数   15%   市场情绪综合指标
- *   资金费率        5%   永续合约资金费率
- *   减半周期        5%   相对减半事件的时间位置
- *   ETF 资金流向    5%   现货 ETF 净流入/流出
+ *   MVRV ratio      20%   链上估值核心指标（数据源：CoinMetrics CapMVRVCur）
+ *   Puell Multiple  20%   矿工收入 / 365日均（CoinMetrics IssTotUSD）
+ *   活跃地址比率   15%   链上活跃度 / 365日均（CoinMetrics AdrActCnt）
+ *   交易所储备量   10%   持续下降 = 用户提链（CoinMetrics SplyExNtv）
+ *   恐慌贪婪指数   15%   市场情绪综合指标（Alternative.me）
+ *   资金费率        5%   永续合约资金费率（OKX/Binance/Bybit）
+ *   减半周期        5%   相对减半事件的时间位置（本地计算）
+ *   200日均线乘数  10%   价格 / 200日均（CoinMetrics PriceUSD）
  *
  * 评分区间：0-25 极端底部 / 25-45 熊市积累 / 45-70 震荡中性 / 70-100 高估预警
  */
@@ -116,7 +116,6 @@ function scoreZone(score) {
 function detectSignalLevel(data) {
   const score    = computeCycleScore(data);
   const mvrzVal  = data.mvrv_ratio?.value           ?? 999;
-  const nuplVal  = data.nupl?.value             ?? 0;
   const fgiVal   = data.fgi?.value              ?? 50;
   const puellVal = data.puell_multiple?.value   ?? 999;
 
@@ -124,7 +123,7 @@ function detectSignalLevel(data) {
   const scores = [
     data.mvrv_ratio?.normalized_score            ?? 50,
     data.puell_multiple?.normalized_score    ?? 50,
-    data.nupl?.normalized_score              ?? 50,
+    data.adr_act?.normalized_score           ?? 50,
     data.exchange_reserves?.normalized_score ?? 50,
     data.fgi?.normalized_score               ?? 50,
     data.funding_rate?.normalized_score      ?? 50,
@@ -165,16 +164,15 @@ function detectSignalLevel(data) {
     };
   }
 
-  // 准极端 — 标准路径：score≤22 + MVRV ratio<1.0 + NUPL<0 + FGI<12
-  // MVRV ratio < 1.0：市值低于已实现市值，市场整体持仓亏损
-  if (score <= 22 && mvrzVal < 1.0 && nuplVal < 0 && fgiVal < 12) {
+  // 准极端 — 标准路径：score≤22 + MVRV ratio<1.0 + FGI<12
+  // MVRV ratio < 1.0：市值低于已实现市值，市场整体持仓亏损（原 NUPL<0 条件等价于此，已合并）
+  if (score <= 22 && mvrzVal < 1.0 && fgiVal < 12) {
     return {
       level: 'quasi', label: '准极端信号',
       detail: '多项底部信号共振，建议重点分批建仓',
       conditions: [
         { met: score <= 22,    text: `周期分 ${score}（≤ 22）` },
-        { met: mvrzVal < 1.0,  text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.0，市值低于已实现市值）` },
-        { met: nuplVal < 0,    text: `NUPL ${nuplVal.toFixed(2)}（< 0，持仓整体亏损）` },
+        { met: mvrzVal < 1.0,  text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.0，市值低于已实现市值，全市场整体亏损）` },
         { met: fgiVal < 12,    text: `恐慌贪婪指数 ${fgiVal}（< 12，极度恐慌）` },
       ],
     };
@@ -230,7 +228,7 @@ function detectSignalLevel(data) {
 }
 
 /**
- * 检查慢变量（Puell / NUPL / 交易所储备）的数据新鲜度
+ * 检查慢变量（Puell / 交易所储备）的数据新鲜度
  * 这三项无免费实时 API，由脚本保留上次已知值；超过 14 天应提示用户手动核实
  * @param {object} data signals-feed.json 解析结果
  * @returns {{ stale: boolean, daysSince: number|null }}

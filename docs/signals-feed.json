@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-16T07:26Z",
+  "updated_at": "2026-06-16T07:55Z",
   "mvrv_ratio": {
     "value": 1.2394,
     "normalized_score": 19,
@@ -10,9 +10,9 @@
     "normalized_score": 35,
     "updated_at": "2026-06-16"
   },
-  "nupl": {
-    "value": 0.1931,
-    "normalized_score": 47,
+  "adr_act": {
+    "ratio": 0.985,
+    "normalized_score": 49,
     "updated_at": "2026-06-16"
   },
   "exchange_reserves": {
@@ -27,7 +27,7 @@
     "updated_at": "2026-06-16"
   },
   "funding_rate": {
-    "value": -0.000057,
+    "value": -0.000059,
     "trend": "neutral",
     "stale": false,
     "normalized_score": 44,

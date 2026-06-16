@@ -261,14 +261,13 @@ function entryTimingDesc(cycleScore, entryThreshold, personaName, signal) {
 function evaluateAllSignalLevels(data) {
   const score    = computeCycleScore(data);
   const mvrzVal  = data.mvrv_ratio?.value        ?? 999;
-  const nuplVal  = data.nupl?.value             ?? 0;
   const fgiVal   = data.fgi?.value              ?? 50;
   const puellVal = data.puell_multiple?.value   ?? 999;
 
   const normScores = [
     data.mvrv_ratio?.normalized_score         ?? 50,
     data.puell_multiple?.normalized_score    ?? 50,
-    data.nupl?.normalized_score              ?? 50,
+    data.adr_act?.normalized_score           ?? 50,
     data.exchange_reserves?.normalized_score ?? 50,
     data.fgi?.normalized_score               ?? 50,
     data.funding_rate?.normalized_score      ?? 50,
@@ -316,12 +315,11 @@ function evaluateAllSignalLevels(data) {
       actionPct:   '极端池 12%',
       cooldownKey: 'quasi_extreme_cooldown_days',
       cooldownWhy: '准极端与极端底部共用极端池，每次打 12%，7 天冷静期，可覆盖约 8 次触发（约 8 周底部窗口）。',
-      note:        '4 项全部满足触发；或 ETF纪元备选：周期分≤20 且 FGI<12',
+      note:        '3 项全部满足触发；或 ETF纪元备选：周期分≤20 且 FGI<12',
       conditions: [
-        { text: '周期分 ≤ 22',              value: `当前 ${score}`,               met: score <= 22 },
-        { text: 'MVRV ratio < 1.0',          value: `当前 ${mvrzVal.toFixed(2)}`,   met: mvrzVal < 1.0 },
-        { text: 'NUPL < 0（持仓整体亏损）', value: `当前 ${nuplVal.toFixed(2)}`,   met: nuplVal < 0 },
-        { text: 'FGI < 12',                value: `当前 ${fgiVal}`,               met: fgiVal < 12 },
+        { text: '周期分 ≤ 22',      value: `当前 ${score}`,               met: score <= 22 },
+        { text: 'MVRV ratio < 1.0', value: `当前 ${mvrzVal.toFixed(2)}`,   met: mvrzVal < 1.0 },
+        { text: 'FGI < 12',         value: `当前 ${fgiVal}`,               met: fgiVal < 12 },
       ],
     },
     {
