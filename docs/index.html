@@ -522,7 +522,7 @@ function renderDashboard(d) {
   setVal(2, '当前值  ', d.nupl?.value !== undefined ? d.nupl.value.toFixed(3) : '—');
   setVal(3, '趋势    ', d.exchange_reserves?.trend === 'decreasing' ? '持续减少 ↓' : d.exchange_reserves?.trend === 'increasing' ? '持续增加 ↑' : (d.exchange_reserves?.trend ?? '—'));
   setVal(4, '当前值  ', (d.fgi?.value ?? '—') + (d.fgi?.label ? '  ·  ' + d.fgi.label : ''));
-  setVal(5, '当前费率  ', frVal !== undefined ? frVal + '% / 8h' : '—');
+  setVal(5, '当前费率  ', frVal != null ? frVal + '% / 8h' : '—');
   setVal(6, '距上次减半  ', d.halving_cycle?.months_since_halving !== undefined ? d.halving_cycle.months_since_halving + ' 个月' : '—');
   setVal(7, '7日均净流向  ', etfVal !== undefined ? (etfVal >= 0 ? '+' : '') + etfVal + 'M USD' : '—');
 

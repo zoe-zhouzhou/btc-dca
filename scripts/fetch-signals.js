@@ -156,6 +156,19 @@ async function fetchBinance() {
     } catch { /* 忽略 */ }
   }
 
+  // OKX 备用（资金费率）
+  if (fundingRate === null) {
+    try {
+      const r = await fetch('https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP',
+        { headers, signal: AbortSignal.timeout(10000) });
+      if (r.ok) {
+        const d = await r.json();
+        const rate = d.data?.[0]?.fundingRate;
+        if (rate != null) fundingRate = parseFloat(rate);
+      }
+    } catch { /* 忽略 */ }
+  }
+
   return { currentPrice, fundingRate };
 }
 
@@ -207,11 +220,13 @@ async function main() {
   const mvrvVal  = mvrvData?.mvrv  ?? existing?.mvrv_z?.value         ?? 1.0;
   const fgiVal   = fgi?.value      ?? existing?.fgi?.value            ?? 50;
   const fgiLabel = fgi?.label      ?? existing?.fgi?.label            ?? 'Neutral';
-  // null = 数据获取失败，与真实 0% 区分；归一化时用 50（中性），不污染缓存
-  const fundingRaw   = binance?.fundingRate ?? null;
-  const fundingFailed = fundingRaw === null;
-  const fundingVal   = fundingRaw ?? 0;   // 计算用，fallback 0 → 归一化 50（中性）
-  const fundingTrend = fundingFailed ? 'unknown' : fundingVal < -0.0001 ? 'negative' : fundingVal > 0.0001 ? 'positive' : 'neutral';
+  // live fetch → 缓存值 → 0（中性兜底），stale 标记来源
+  const fundingRaw    = binance?.fundingRate ?? null;
+  const fundingCached = fundingRaw === null ? (existing?.funding_rate?.value ?? null) : null;
+  const fundingStale  = fundingRaw === null && fundingCached !== null;
+  const fundingFailed = fundingRaw === null && fundingCached === null;
+  const fundingVal    = fundingRaw ?? fundingCached ?? 0;
+  const fundingTrend  = fundingFailed ? 'unknown' : fundingVal < -0.0001 ? 'negative' : fundingVal > 0.0001 ? 'positive' : 'neutral';
   const priceNow = binance?.currentPrice ?? existing?.current_price ?? null;
 
   // CoinMetrics 自动计算值（失败时回退到上次已知值）
@@ -248,7 +263,7 @@ async function main() {
     nupl:              { value: parseFloat(nuplVal.toFixed(4)),   normalized_score: ns.nupl,               updated_at: nuplLive   != null ? today : slowVarsUpdatedAt },
     exchange_reserves: { btc_amount: reservesBtc,                  normalized_score: ns.exchange_reserves, updated_at: today },
     fgi:               { value: fgiVal, label: fgiLabel,           normalized_score: ns.fgi,               updated_at: today },
-    funding_rate:      { value: fundingFailed ? null : parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, normalized_score: ns.funding_rate, updated_at: today },
+    funding_rate:      { value: fundingFailed ? null : parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, stale: fundingStale, normalized_score: ns.funding_rate, updated_at: today },
     halving_cycle:     { months_since_halving: halving.months_since_halving, normalized_score: ns.halving_cycle, updated_at: today },
     etf_flow:          { '7d_avg_usd_m': etfAvg,                  normalized_score: ns.etf_flow,          updated_at: today },
     current_price: priceNow,
@@ -264,7 +279,7 @@ async function main() {
   const puellSrc = puellLive != null ? '自动' : '缓存';
   const nuplSrc  = nuplLive  != null ? '精确' : (mvrvData ? 'MVRV近似' : '缓存');
   console.log(`  MVRV：${mvrvVal.toFixed(3)}  Puell：${puellVal.toFixed(3)}（${puellSrc}）  NUPL：${nuplVal.toFixed(3)}（${nuplSrc}）`);
-  const fundingStr = fundingFailed ? '获取失败（用50中性）' : `${(fundingVal * 100).toFixed(4)}%`;
+  const fundingStr = fundingFailed ? '获取失败（中性50）' : `${(fundingVal * 100).toFixed(4)}%${fundingStale ? '（缓存）' : ''}`;
   console.log(`  储备：${reservesBtc ? Math.round(reservesBtc).toLocaleString() + ' BTC' : '-（缓存）'}  FGI：${fgiVal}（${fgiLabel}）  价格：$${priceNow ?? '-'}  资金费率：${fundingStr}`);
   if (degraded) console.warn(`  ⚠️ ${degradedReason}`);
 }
