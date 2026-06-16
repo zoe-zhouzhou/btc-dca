@@ -58,19 +58,23 @@ function normalizeHalving(m) {
   if (m < 30) return Math.round(85 - clamp01(m, 15, 30) * 75);
   return             Math.round(10 + clamp01(m, 30, 48) * 35);
 }
-// ETF 7日均流向：-500M（流出）到 +500M（流入）
-function normalizeEtfFlow(m){ return Math.round(clamp01(m, -500, 500) * 100); }
+// 200日均线乘数：price/200dMA，对数归一化
+// 0.6（深跌破均线）→ 0，4.0（极端泡沫）→ 100；历史底部乘数约 0.7–0.85
+function normalizeMA200(m) {
+  const lo = Math.log(0.6), hi = Math.log(4.0);
+  return Math.round(clamp01(Math.log(Math.max(m, 0.01)), lo, hi) * 100);
+}
 
 function computeCycleScore(s) {
   return Math.round(
-    s.mvrv_ratio        * 0.25 +
+    s.mvrv_ratio        * 0.20 +  // 原 0.25，200dMA 承接部分估值权重
     s.puell_multiple    * 0.20 +
     s.nupl              * 0.15 +
     s.exchange_reserves * 0.10 +
     s.fgi               * 0.15 +
     s.funding_rate      * 0.05 +
     s.halving_cycle     * 0.05 +
-    s.etf_flow          * 0.05,
+    s.ma_200d           * 0.10,   // 原 etf_flow 0.05，真实数据权重翻倍
   );
 }
 
@@ -94,28 +98,37 @@ async function fetchCoinMetrics() {
   const price7dAgo  = baseRows.length >= 8 ? parseFloat(baseRows[baseRows.length - 8]?.PriceUSD ?? '0') : null;
   const reservesBtc = parseFloat(latest.SplyExNtv) || null;
 
-  // ② Puell Multiple = 当日矿工产出USD / 365日均值（IssTotUSD，page_size 可取 366 行）
-  let puell = null;
+  // ② Puell Multiple + 200日均线（同一请求，节省 API 调用）
+  let puell = null, ma200 = null;
   try {
-    const start      = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10);
-    const puellUrl   = 'https://community-api.coinmetrics.io/v4/timeseries/asset-metrics'
-      + `?assets=btc&metrics=IssTotUSD&start_time=${start}&page_size=400`;
+    const start    = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10);
+    const puellUrl = 'https://community-api.coinmetrics.io/v4/timeseries/asset-metrics'
+      + `?assets=btc&metrics=IssTotUSD,PriceUSD&start_time=${start}&page_size=400`;
     const pr = await fetch(puellUrl, { headers: HDR, signal: AbortSignal.timeout(20000) });
     if (pr.ok) {
-      const pRows  = (await pr.json())?.data ?? [];
-      const vals   = pRows.map(r => parseFloat(r.IssTotUSD)).filter(v => !isNaN(v) && v > 0);
-      const w365   = vals.slice(-365);
+      const pRows = (await pr.json())?.data ?? [];
+
+      // Puell Multiple
+      const vals = pRows.map(r => parseFloat(r.IssTotUSD)).filter(v => !isNaN(v) && v > 0);
+      const w365 = vals.slice(-365);
       if (w365.length >= 180 && vals.length > 0) {
         const ma365 = w365.reduce((s, v) => s + v, 0) / w365.length;
         puell = vals[vals.length - 1] / ma365;
       }
-    }
-  } catch { /* 忽略，保留 puell=null */ }
 
-  // ③ NUPL = 1 - 1/MVRV（CapRealizedUSD 为付费指标，此近似与精确值误差 <2%）
+      // 200日均线
+      const prices = pRows.map(r => parseFloat(r.PriceUSD)).filter(v => !isNaN(v) && v > 0);
+      const w200   = prices.slice(-200);
+      if (w200.length >= 150) {
+        ma200 = w200.reduce((s, v) => s + v, 0) / w200.length;
+      }
+    }
+  } catch { /* 忽略，保留 puell/ma200=null */ }
+
+  // ③ NUPL = 1 - 1/MVRV（数学精确推导，非近似）
   const nupl = 1 - 1 / mvrv;
 
-  return { mvrv, price7dAgo, reservesBtc, nupl, puell };
+  return { mvrv, price7dAgo, reservesBtc, nupl, puell, ma200 };
 }
 
 // ── 恐慌贪婪指数 ───────────────────────────────────────────────────────────
@@ -176,14 +189,6 @@ async function fetchBinance() {
   return { currentPrice, fundingRate };
 }
 
-// ── ETF 流向近似（FGI + 价格动量估算，无免费 API）───────────────────────────
-function estimateEtfFlow(fgiVal, priceNow, price7dAgo) {
-  if (!priceNow || !price7dAgo || price7dAgo === 0) return 0;
-  const priceChg  = (priceNow - price7dAgo) / price7dAgo;
-  const sentiment = (fgiVal - 50) / 50;              // -1 ~ +1
-  return Math.round((priceChg * 0.6 + sentiment * 0.4) * 300); // 映射到 ±300M 估算
-}
-
 // ── 减半周期 ───────────────────────────────────────────────────────────────
 function halvingCycleData() {
   const monthsSince = (Date.now() - HALVING_DATE.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
@@ -237,15 +242,16 @@ async function main() {
   const reservesBtc = mvrvData?.reservesBtc ?? existing?.exchange_reserves?.btc_amount ?? null;
   const puellLive   = mvrvData?.puell       ?? null;
   const nuplLive    = mvrvData?.nupl        ?? null;
+  const ma200Live   = mvrvData?.ma200       ?? null;
 
   const puellVal = puellLive ?? existing?.puell_multiple?.value ?? 1.0;
   const nuplVal  = nuplLive  ?? existing?.nupl?.value          ?? 0.0;
 
   const slowVarsUpdatedAt = existing?.slow_vars_updated_at ?? today;
 
-  // ETF 流向估算
-  const price7dAgo = mvrvData?.price7dAgo ?? existing?.current_price ?? null;
-  const etfAvg     = estimateEtfFlow(fgiVal, priceNow, price7dAgo);
+  // 200日均线乘数（price / MA200）；失败时用缓存，无缓存则 null（归一化用 1.0 中性）
+  const ma200Val   = ma200Live ?? existing?.ma_200d?.ma_value ?? null;
+  const ma200Mult  = (ma200Val && priceNow) ? priceNow / ma200Val : null;
 
   const ns = {
     mvrv_ratio:        normalizeMvrv(mvrvVal),
@@ -255,7 +261,7 @@ async function main() {
     fgi:               normalizeFGI(fgiVal),
     funding_rate:      normalizeFunding(fundingVal),
     halving_cycle:     halving.normalized_score,
-    etf_flow:          normalizeEtfFlow(etfAvg),
+    ma_200d:           normalizeMA200(ma200Mult ?? 1.0),
   };
 
   const cycleScore = computeCycleScore(ns);
@@ -269,7 +275,7 @@ async function main() {
     fgi:               { value: fgiVal, label: fgiLabel,           normalized_score: ns.fgi,               updated_at: today },
     funding_rate:      { value: fundingFailed ? null : parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, stale: fundingStale, normalized_score: ns.funding_rate, updated_at: today },
     halving_cycle:     { months_since_halving: halving.months_since_halving, normalized_score: ns.halving_cycle, updated_at: today },
-    etf_flow:          { '7d_avg_usd_m': etfAvg,                  normalized_score: ns.etf_flow,          updated_at: today },
+    ma_200d:           { multiplier: ma200Mult ? parseFloat(ma200Mult.toFixed(3)) : null, ma_value: ma200Val ? Math.round(ma200Val) : null, normalized_score: ns.ma_200d, updated_at: today },
     current_price: priceNow,
     cycle_score:   cycleScore,
     degraded,
@@ -284,7 +290,9 @@ async function main() {
   const nuplSrc  = nuplLive  != null ? '精确' : (mvrvData ? 'MVRV近似' : '缓存');
   console.log(`  MVRV：${mvrvVal.toFixed(3)}  Puell：${puellVal.toFixed(3)}（${puellSrc}）  NUPL：${nuplVal.toFixed(3)}（${nuplSrc}）`);
   const fundingStr = fundingFailed ? '获取失败（中性50）' : `${(fundingVal * 100).toFixed(4)}%${fundingStale ? '（缓存）' : ''}`;
+  const ma200Str   = ma200Mult ? `×${ma200Mult.toFixed(3)}（MA=$${Math.round(ma200Val).toLocaleString()}）` : '无数据（中性）';
   console.log(`  储备：${reservesBtc ? Math.round(reservesBtc).toLocaleString() + ' BTC' : '-（缓存）'}  FGI：${fgiVal}（${fgiLabel}）  价格：$${priceNow ?? '-'}  资金费率：${fundingStr}`);
+  console.log(`  200dMA乘数：${ma200Str}`);
   if (degraded) console.warn(`  ⚠️ ${degradedReason}`);
 }
 

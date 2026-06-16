@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-16T07:06Z",
+  "updated_at": "2026-06-16T07:26Z",
   "mvrv_ratio": {
     "value": 1.2394,
     "normalized_score": 19,
@@ -27,10 +27,10 @@
     "updated_at": "2026-06-16"
   },
   "funding_rate": {
-    "value": -0.00005,
+    "value": -0.000057,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 45,
+    "normalized_score": 44,
     "updated_at": "2026-06-16"
   },
   "halving_cycle": {
@@ -38,13 +38,14 @@
     "normalized_score": 31,
     "updated_at": "2026-06-16"
   },
-  "etf_flow": {
-    "7d_avg_usd_m": -69,
-    "normalized_score": 43,
+  "ma_200d": {
+    "multiplier": 0.795,
+    "ma_value": 77532,
+    "normalized_score": 15,
     "updated_at": "2026-06-16"
   },
   "current_price": 61658,
-  "cycle_score": 32,
+  "cycle_score": 31,
   "degraded": false,
   "degraded_reason": null
 }

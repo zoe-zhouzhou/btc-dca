@@ -453,7 +453,7 @@ function renderDashboard(d) {
     d.fgi?.normalized_score               ?? 50,
     d.funding_rate?.normalized_score      ?? 50,
     d.halving_cycle?.normalized_score     ?? 50,
-    d.etf_flow?.normalized_score          ?? 50,
+    d.ma_200d?.normalized_score           ?? 50,
   ];
   scores.forEach((s, i) => {
     setChip(i, s);
@@ -465,11 +465,11 @@ function renderDashboard(d) {
     mvrvStatus(d.mvrv_ratio?.value),
     puellStatus(d.puell_multiple?.value),
     nuplStatus(d.nupl?.value),
-    reserveStatus(d.exchange_reserves?.trend),
+    reserveStatus(d.exchange_reserves?.btc_amount),
     fgiStatus(d.fgi?.value),
     frStatus(d.funding_rate?.value),
     halvingStatus(d.halving_cycle?.months_since_halving),
-    etfStatus(d.etf_flow?.['7d_avg_usd_m']),
+    ma200Status(d.ma_200d?.multiplier),
   ];
   const indUpdatedAt = [
     d.mvrv_ratio?.updated_at,
@@ -479,7 +479,7 @@ function renderDashboard(d) {
     d.fgi?.updated_at,
     d.funding_rate?.updated_at,
     d.halving_cycle?.updated_at,
-    d.etf_flow?.updated_at,
+    d.ma_200d?.updated_at,
   ];
   const todayStr = new Date().toISOString().slice(0, 10);
   indStatuses.forEach((st, i) => {
@@ -515,16 +515,17 @@ function renderDashboard(d) {
   });
 
   /* 原始值填充弹窗 */
-  const frVal = d.funding_rate?.value;
-  const etfVal = d.etf_flow?.['7d_avg_usd_m'];
+  const frVal   = d.funding_rate?.value;
+  const ma200m  = d.ma_200d?.multiplier;
+  const ma200v  = d.ma_200d?.ma_value;
   setVal(0, '当前值  ', d.mvrv_ratio?.value?.toFixed(2) ?? '—');
   setVal(1, '当前值  ', d.puell_multiple?.value?.toFixed(2) ?? '—');
   setVal(2, '当前值  ', d.nupl?.value !== undefined ? d.nupl.value.toFixed(3) : '—');
-  setVal(3, '趋势    ', d.exchange_reserves?.trend === 'decreasing' ? '持续减少 ↓' : d.exchange_reserves?.trend === 'increasing' ? '持续增加 ↑' : (d.exchange_reserves?.trend ?? '—'));
+  setVal(3, '储备量  ', d.exchange_reserves?.btc_amount != null ? Math.round(d.exchange_reserves.btc_amount).toLocaleString() + ' BTC' : '—');
   setVal(4, '当前值  ', (d.fgi?.value ?? '—') + (d.fgi?.label ? '  ·  ' + d.fgi.label : ''));
   setVal(5, '当前费率  ', frVal != null ? frVal + '% / 8h' : '—');
   setVal(6, '距上次减半  ', d.halving_cycle?.months_since_halving !== undefined ? d.halving_cycle.months_since_halving + ' 个月' : '—');
-  setVal(7, '7日均净流向  ', etfVal !== undefined ? (etfVal >= 0 ? '+' : '') + etfVal + 'M USD' : '—');
+  setVal(7, '均线乘数  ', ma200m != null ? '×' + ma200m.toFixed(3) + (ma200v ? '  ·  MA=$' + ma200v.toLocaleString() : '') : '—');
 
 }
 
@@ -550,10 +551,14 @@ function nuplStatus(val) {
   if (val < 0.5)  return { text: '中性乐观', cls: 'amber', desc: '盈利区间扩大，估值趋于正常' };
   return          { text: '贪婪区', cls: 'red', desc: '持仓者大幅盈利，估值偏高' };
 }
-function reserveStatus(trend) {
-  if (trend === 'decreasing') return { text: '持续流出链上', cls: 'green', desc: '用户提链自托管，交易所卖压减少' };
-  if (trend === 'increasing') return { text: '流入增加', cls: 'red',   desc: '用户将币存入交易所，卖压上升' };
-  return { text: '趋势中性', cls: 'amber', desc: '储备量无明显方向' };
+function reserveStatus(btcAmount) {
+  if (btcAmount === null || btcAmount === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  const m = Math.round(btcAmount / 1e4) / 100; // 万 BTC，保留两位
+  if (btcAmount < 2_000_000) return { text: '低储备 ' + m + 'M BTC', cls: 'green', desc: '交易所BTC极少，抛压极低，强烈看多信号' };
+  if (btcAmount < 2_400_000) return { text: '偏低 ' + m + 'M BTC',   cls: 'green', desc: '储备低位，用户自托管意愿强，卖压较小' };
+  if (btcAmount < 2_800_000) return { text: '中性 ' + m + 'M BTC',   cls: 'amber', desc: '储备量处于历史中位' };
+  if (btcAmount < 3_000_000) return { text: '偏高 ' + m + 'M BTC',   cls: 'amber', desc: '交易所储备上升，潜在卖压增加' };
+  return                            { text: '高储备 ' + m + 'M BTC',  cls: 'red',   desc: '大量BTC流入交易所，卖压显著上升' };
 }
 function fgiStatus(val) {
   if (val === null || val === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
@@ -576,12 +581,14 @@ function halvingStatus(months) {
   if (months < 30) return { text: '减半后 ' + months + ' 月', cls: 'amber', desc: '减半效应逐步释放中' };
   return           { text: '减半后 ' + months + ' 月', cls: 'amber', desc: '远离减半，进入周期中后段' };
 }
-function etfStatus(val) {
-  if (val === null || val === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
-  if (val < -100) return { text: '净流出 ' + val + 'M', cls: 'amber', desc: '机构持续卖出，短期看空' };
-  if (val < 0)    return { text: '轻微流出 ' + val + 'M', cls: 'amber', desc: '机构小幅减仓' };
-  if (val < 50)   return { text: '小幅流入 +' + val + 'M', cls: 'amber', desc: '机构缓慢建仓' };
-  return          { text: '净流入 +' + val + 'M', cls: 'green', desc: '机构大量买入，看多信号' };
+function ma200Status(multiplier) {
+  if (multiplier === null || multiplier === undefined) return { text: '—', cls: 'amber', desc: '数据不可用' };
+  const x = multiplier.toFixed(2);
+  if (multiplier < 0.8)  return { text: '深跌破均线 ×' + x, cls: 'green', desc: '价格远低于200日均线，历史极端积累信号' };
+  if (multiplier < 1.0)  return { text: '低于均线 ×' + x,   cls: 'green', desc: '价格低于200日均线，历史强力买入区' };
+  if (multiplier < 1.5)  return { text: '均线附近 ×' + x,   cls: 'amber', desc: '价格略高于均线，中性偏多' };
+  if (multiplier < 2.5)  return { text: '均线上方 ×' + x,   cls: 'amber', desc: '牛市中段，注意节奏' };
+  return                        { text: '大幅偏离 ×' + x,   cls: 'red',   desc: '价格严重偏离均线，历史泡沫区警示' };
 }
 
 /* ─── 回测数据 ─── */

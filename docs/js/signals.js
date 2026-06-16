@@ -129,7 +129,7 @@ function detectSignalLevel(data) {
     data.fgi?.normalized_score               ?? 50,
     data.funding_rate?.normalized_score      ?? 50,
     data.halving_cycle?.normalized_score     ?? 50,
-    data.etf_flow?.normalized_score          ?? 50,
+    data.ma_200d?.normalized_score          ?? 50,
   ];
 
   // 宽松低分区 ≤40；严格低分区 ≤25
