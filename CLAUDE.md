@@ -106,20 +106,20 @@ BTCDCA/
 
 | 指标 | 权重 | 数据来源 |
 |------|------|---------|
-| MVRV-Z Score | 25% | Glassnode → signals-feed.json（备用：CoinMetrics `CapMVRVCur`） |
-| Puell Multiple | 20% | Glassnode → signals-feed.json（备用：LookIntoBitcoin） |
-| NUPL / SOPR | 15% | Glassnode → signals-feed.json（备用：LookIntoBitcoin） |
-| 交易所储备量 | 10% | Glassnode → signals-feed.json（备用：CryptoQuant） |
+| MVRV ratio | 25% | CoinMetrics CapMVRVCur（免费 API）→ signals-feed.json |
+| Puell Multiple | 20% | CoinMetrics IssTotUSD（免费 API）→ signals-feed.json |
+| 活跃地址比率 | 10% | CoinMetrics AdrActCnt（免费 API）→ signals-feed.json |
+| 交易所储备量 | 10% | CoinMetrics SplyExNtv（免费 API）→ signals-feed.json |
 | 恐慌贪婪指数 | 15% | alternative.me → signals-feed.json |
-| 资金费率信号 | 5% | Binance/Bybit 公开 API → signals-feed.json |
+| 资金费率信号 | 5% | OKX / Binance / Bybit 公开 API → signals-feed.json |
 | 减半周期位置 | 5% | 本地计算（根据减半日期） |
-| ETF 资金流向 | 5% | GitHub Actions → signals-feed.json |
+| 200日均线乘数 | 10% | CoinMetrics PriceUSD（免费 API）→ signals-feed.json |
 
 权重为经验权重+回测验证，非数学最优。每个指标归一化为 0-100（低=底部，高=顶部）。
 
 **评分区间**：0-25 极端底部 / 25-45 熊市积累 / 45-70 震荡中性 / 70-100 高估预警
 
-**降级模式**：Glassnode 不可用时，用 FGI + 资金费率 + 减半周期位置兜底，界面显示橙色警告，暂停信号型定投。
+**降级模式**：CoinMetrics 不可用时，用 FGI + 资金费率 + 减半周期位置兜底，界面显示橙色警告，暂停信号型定投。
 
 ### 信号触发四级体系
 
@@ -129,7 +129,7 @@ BTCDCA/
 |------|-------------------|----|------|
 | 普通信号 | 周期分 ≤28 · 8指标中≥5项归一化分≤40 · MVRV ratio < 1.5 | 信号池 × **6%**，单次执行 | r≥4: 7天 / r≥3: 8天 / r<3: 10天 |
 | 加速信号 | 周期分 ≤30 · ≥7项归一化分≤25 · MVRV ratio < 1.2 · FGI < 15 | 信号池 × **10%**，单次执行 | r≥4: 10天 / r≥3: 12天 / r<3: 14天 |
-| 准极端信号 | 周期分 ≤22 · MVRV ratio < 1.0 · NUPL < 0 · FGI < 12 **或** 周期分 ≤20 · FGI < 12（ETF纪元备选） | 极端池 × **12%**，单次执行 | **7天**（所有画像固定） |
+| 准极端信号 | 周期分 ≤22 · MVRV ratio < 1.0 · FGI < 12 **或** 周期分 ≤20 · FGI < 12（ETF纪元备选） | 极端池 × **12%**，单次执行 | **7天**（所有画像固定） |
 | 极端底部信号 | 周期分 ≤17 · MVRV ratio < 0.85 · FGI < 7 · Puell < 0.5 **或** 周期分 ≤15 · FGI < 7 · Puell < 0.5（ETF纪元备选） | 极端池 × **20%**，单次执行 | **7天**（所有画像固定） |
 
 **关键设计决策：**
@@ -137,7 +137,7 @@ BTCDCA/
 - 准极端与极端底部**共用**极端池（条件嵌套，系统取最高级触发，不重复消耗）
 - 信号池设计覆盖约16次普通信号触发（6% × 16 ≈ 96%）；极端池设计覆盖约8次准极端（12%×8=96%）或5次极端底部（20%×5=100%）
 - 基础池按**8个月**底部窗口摊算（weekly: 34批，biweekly: 17批）；触发门槛 score ≤ min(28, entry_threshold) = **28**，与普通信号门槛对齐
-- ETF纪元备选路径：MVRV-Z 因机构买盘结构性抬底，准极端/极端底部添加 FGI 驱动备选路径（见 signals.js detectSignalLevel）
+- ETF纪元备选路径：MVRV ratio 因机构买盘结构性抬底，准极端/极端底部添加 FGI 驱动备选路径（见 signals.js detectSignalLevel）
 - 普通信号 / 基础池触发门槛调整至 score ≤ **28**（熊市积累下段），避免在市场未进入极端前耗尽弹药
 
 ### 三档停止逻辑（半对称）

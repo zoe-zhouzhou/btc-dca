@@ -2,10 +2,10 @@
  * backtest.js v2 — 历史回测引擎
  *
  * 修复：
- *   1. MVRV-Z / Puell / NUPL 近似值返回实际值，对齐 detectSignalLevel 阈值
- *   2. 执行比例更新至 v6.x（普通 8% / 加速 12% / 准极端 10% / 极端 15%）
- *   3. 基础池每次执行改为 1/26（周投）或 1/13（双周投）
- *   4. 周期分数近似改用 MVRV-Z + Puell + NUPL + FGI + 减半周期五因子加权
+ *   1. MVRV ratio / Puell / 200日均线乘数 由价格历史近似，对齐 detectSignalLevel 阈值
+ *   2. 活跃地址比率 / 交易所储备 / 资金费率 无历史数据，用中性值 50 填充
+ *   3. 基础池每次执行改为 1/34（周投）或 1/17（双周投）
+ *   4. 周期分数近似：MVRV ratio(25%) + Puell(20%) + MA200(10%) + FGI(15%) + 减半(5%) + 缺失25%@50
  *
  * 对外暴露：
  *   BTC_WEEKLY_DATA   历史价格数组 [{ date, price, fgi? }]
@@ -221,9 +221,10 @@ function halvingCycleNorm(dateStr) {
 }
 
 /**
- * 近似 MVRV-Z 值（返回实际值，非百分位）
+ * 近似 MVRV ratio（返回实际值，非百分位）
  * 用 2年移动均线（~104条双周数据）作为"已实现价格"代理
- * MVRV-Z = (price / realizedPrice - 1.8) / 0.7
+ * 内部用 Z-like 变换 (mvrv - 1.8) / 0.7 对齐历史底部阈值，所以变量名保留 mvrvZ
+ * 阈值对应关系：ratio 0.85→-1.36, 1.0→-1.14, 1.2→-0.86, 1.5→-0.43
  * 历史校验：2015年1月、2022年11月均在 -0.5 附近 ✓
  */
 function approxMvrvZ(idx, data) {
@@ -232,6 +233,17 @@ function approxMvrvZ(idx, data) {
   const realized = slice.reduce((s, d) => s + d.price, 0) / slice.length;
   const mvrv = data[idx].price / realized;
   return parseFloat(((mvrv - 1.8) / 0.7).toFixed(2));
+}
+
+/**
+ * 近似 200日均线乘数（当前价 / 200日MA）
+ * 200天 ≈ 双周数据 14 条
+ */
+function approxMa200(idx, data) {
+  const start = Math.max(0, idx - 14);
+  const slice = data.slice(start, idx + 1);
+  const ma = slice.reduce((s, d) => s + d.price, 0) / slice.length;
+  return parseFloat((data[idx].price / ma).toFixed(3));
 }
 
 /**
@@ -247,19 +259,6 @@ function approxPuell(idx, data) {
   return parseFloat((data[idx].price / ma365).toFixed(2));
 }
 
-/**
- * 近似 NUPL 值（返回实际值）
- * NUPL ≈ (price - realizedPrice) / price
- * NUPL < 0 表示持仓整体亏损
- */
-function approxNupl(idx, data) {
-  const start = Math.max(0, idx - 26); // 52周/1年，还原最近一轮牛市的真实持仓成本基础
-  const slice = data.slice(start, idx + 1);
-  const realized = slice.reduce((s, d) => s + d.price, 0) / slice.length;
-  const price = data[idx].price;
-  return parseFloat(((price - realized) / price).toFixed(3));
-}
-
 // ── 归一化到 0-100（分数越低越便宜）──
 
 function mvrvZToNorm(z) {
@@ -272,9 +271,10 @@ function puellToNorm(p) {
   return Math.max(0, Math.min(100, Math.round(p / 4 * 100)));
 }
 
-function nuplToNorm(n) {
-  // n < 0 → <33；n=0 → 33；n=0.5 → 67；n≥1 → 100
-  return Math.max(0, Math.min(100, Math.round((n + 0.5) / 1.5 * 100)));
+function ma200ToNorm(m) {
+  // 对数归一化 [0.6, 4.0]，与 fetch-signals.js normalizeMA200 对齐
+  const lo = Math.log(0.6), hi = Math.log(4.0);
+  return Math.max(0, Math.min(100, Math.round((Math.log(Math.max(m, 0.01)) - lo) / (hi - lo) * 100)));
 }
 
 /** FGI 历史百分位（截止当前已有数据） */
@@ -316,29 +316,30 @@ function approxFgi(idx, data) {
 }
 
 /**
- * 近似周期分数（5因子加权，对齐 8 指标体系）
- * 缺失指标（交易所储备/资金费率/ETF）用中性值 50 填充
+ * 近似周期分数（6因子加权，对齐 8 指标体系）
+ * MVRV(25%) + Puell(20%) + MA200(10%) + FGI(15%) + Halving(5%) = 75%
+ * 缺失指标（活跃地址比率/交易所储备/资金费率，共 25%）用中性值 50 填充
  */
 function approxCycleScore(idx, data) {
   const d = data[idx];
   const mvrvZ  = approxMvrvZ(idx, data);
   const puell  = approxPuell(idx, data);
-  const nupl   = approxNupl(idx, data);
+  const ma200  = approxMa200(idx, data);
   const fgi    = approxFgi(idx, data);
   const halv   = halvingCycleNorm(d.date);
 
   const s_mvrv  = mvrvZToNorm(mvrvZ);  // 25%
   const s_puell = puellToNorm(puell);  // 20%
-  const s_nupl  = nuplToNorm(nupl);    // 15%
+  const s_ma200 = ma200ToNorm(ma200);  // 10%
   const s_fgi   = fgi;                 // 15%
   const s_halv  = halv;                // 5%
-  // 三个缺失指标（10%+5%+5%=20%）用中性值 50
+  // 缺失指标（活跃地址比率 10% + 交易所储备 10% + 资金费率 5% = 25%）用中性值 50
   return Math.round(
     s_mvrv  * 0.25 +
     s_puell * 0.20 +
-    s_nupl  * 0.15 +
+    s_ma200 * 0.10 +
     s_fgi   * 0.15 +
-    50      * 0.20 + // exchange reserves + funding rate + ETF flow
+    50      * 0.25 +
     s_halv  * 0.05
   );
 }
@@ -357,15 +358,15 @@ function detectSignalForBacktest(idx, data) {
   const score  = approxCycleScore(idx, data);
   const mvrvZ  = approxMvrvZ(idx, data);
   const puell  = approxPuell(idx, data);
-  const nupl   = approxNupl(idx, data);
+  const ma200  = approxMa200(idx, data);
   // FGI：有实际数据用真实值，否则用价格行情近似（覆盖2018年前缺数据问题）
   const fgiVal = approxFgi(idx, data);
 
-  // 5 项已知/近似指标（交易所储备/资金费率/ETF 流向历史无数据，不计入）
+  // 5 项已知/近似指标（活跃地址比率/交易所储备/资金费率历史无数据，不计入）
   const knownScores = [
     mvrvZToNorm(mvrvZ),
     puellToNorm(puell),
-    nuplToNorm(nupl),
+    ma200ToNorm(ma200),
     halvingCycleNorm(d.date),
     fgiVal,
   ];
@@ -387,7 +388,7 @@ function detectSignalForBacktest(idx, data) {
   if (score <= 15 && fgiVal < 7 && puell < 0.5) return 'extreme';
 
   // 准极端 — 标准路径：MVRV ratio<1.0（Z<-1.14）对应市值低于已实现市值
-  if (score <= 22 && mvrvZ < -1.14 && nupl < 0 && fgiVal < 12) return 'quasi';
+  if (score <= 22 && mvrvZ < -1.14 && fgiVal < 12) return 'quasi';
   // 准极端 — ETF纪元备选路径
   if (score <= 20 && fgiVal < 12) return 'quasi';
 
