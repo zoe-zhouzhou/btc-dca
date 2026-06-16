@@ -212,12 +212,14 @@ function halvingMonthsSince(dateStr) {
   return (d - latest) / (30.44 * 86400000);
 }
 
-/** 减半周期归一化分数（0-100，低 = 早期积累，高 = 晚期牛市） */
+/** 减半周期归一化分数（分段线性，与 fetch-signals.js normalizeHalving 对齐）
+ *  牛顶 ~month15（85分），熊底 ~month30（10分），之后小幅回升 */
 function halvingCycleNorm(dateStr) {
   const months = halvingMonthsSince(dateStr);
-  // 4年周期约48个月，前12个月是积累区（低估），中间爬升，36个月以上接近牛市顶部
-  const clipped = Math.min(months, 48);
-  return Math.round(10 + (clipped / 48) * 75);
+  const clamp = (v, lo, hi) => Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+  if (months < 15) return Math.round(30 + clamp(months, 0,  15) * 55);
+  if (months < 30) return Math.round(85 - clamp(months, 15, 30) * 75);
+  return             Math.round(10 + clamp(months, 30, 48) * 35);
 }
 
 /**
@@ -262,13 +264,15 @@ function approxPuell(idx, data) {
 // ── 归一化到 0-100（分数越低越便宜）──
 
 function mvrvZToNorm(z) {
-  // z ≤ -0.3 → ≤10；z=0 → ~20；z=1 → ~40；z=3 → ~75；z≥7 → 100
-  return Math.max(0, Math.min(100, Math.round((z + 2) / 9 * 100)));
+  // 转回 MVRV ratio（z*0.7+1.8），再用生产系统线性归一化 [0.7, 3.5]
+  const mvrv = z * 0.7 + 1.8;
+  return Math.max(0, Math.min(100, Math.round((mvrv - 0.7) / (3.5 - 0.7) * 100)));
 }
 
 function puellToNorm(p) {
-  // p < 0.5 → 0-15；p≈1 → ~30；p≈2 → ~60；p≥4 → 100
-  return Math.max(0, Math.min(100, Math.round(p / 4 * 100)));
+  // 对数归一化 [0.3, 4.0]，与 fetch-signals.js normalizePuell 对齐
+  const lo = Math.log(0.3), hi = Math.log(4.0);
+  return Math.max(0, Math.min(100, Math.round((Math.log(Math.max(p, 0.01)) - lo) / (hi - lo) * 100)));
 }
 
 function ma200ToNorm(m) {
@@ -371,7 +375,6 @@ function detectSignalForBacktest(idx, data) {
     fgiVal,
   ];
 
-  const n = 5;
   const looseNeed  = 3; // 5/8 * 5 ≈ 3
   const strictNeed = 4; // 7/8 * 5 ≈ 4
 
@@ -395,8 +398,10 @@ function detectSignalForBacktest(idx, data) {
   // 加速信号：MVRV ratio<1.2（Z<-0.86）对应接近已实现市值
   if (score <= 30 && strictCount >= strictNeed && mvrvZ < -0.86 && fgiVal < 15) return 'accel';
 
-  // 普通信号：MVRV ratio<1.5（Z<-0.43）对应估值偏低
+  // 普通信号 — 标准路径：MVRV ratio<1.5（Z<-0.43）对应估值偏低
   if (score <= 28 && looseCount >= looseNeed && mvrvZ < -0.43) return 'normal';
+  // 普通信号 — 200dMA 备选路径：价格跌破长期均线且情绪偏空
+  if (ma200 < 1.0 && fgiVal < 40 && score <= 35) return 'normal';
 
   return 'none';
 }
