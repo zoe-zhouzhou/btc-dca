@@ -1,49 +1,49 @@
 {
-  "updated_at": "2026-06-15T22:54Z",
+  "updated_at": "2026-06-16T00:22Z",
   "mvrv_z": {
     "value": 1.2276,
     "normalized_score": 19,
-    "updated_at": "2026-06-15"
+    "updated_at": "2026-06-16"
   },
   "puell_multiple": {
     "value": 0.7183,
     "normalized_score": 11,
-    "updated_at": "2026-06-15"
+    "updated_at": "2026-06-16"
   },
   "nupl": {
     "value": 0.1854,
     "normalized_score": 46,
-    "updated_at": "2026-06-15"
+    "updated_at": "2026-06-16"
   },
   "exchange_reserves": {
     "btc_amount": 2645870.61349152,
     "normalized_score": 40,
-    "updated_at": "2026-06-15"
+    "updated_at": "2026-06-16"
   },
   "fgi": {
-    "value": 20,
+    "value": 23,
     "label": "Extreme Fear",
-    "normalized_score": 20,
-    "updated_at": "2026-06-15"
+    "normalized_score": 23,
+    "updated_at": "2026-06-16"
   },
   "funding_rate": {
     "value": 0,
     "trend": "neutral",
     "normalized_score": 50,
-    "updated_at": "2026-06-15"
+    "updated_at": "2026-06-16"
   },
   "halving_cycle": {
     "months_since_halving": 26,
     "normalized_score": 31,
-    "updated_at": "2026-06-15"
+    "updated_at": "2026-06-16"
   },
   "etf_flow": {
-    "7d_avg_usd_m": -76,
-    "normalized_score": 42,
-    "updated_at": "2026-06-15"
+    "7d_avg_usd_m": -65,
+    "normalized_score": 44,
+    "updated_at": "2026-06-16"
   },
   "current_price": 61658,
-  "cycle_score": 27,
-  "degraded": false,
-  "degraded_reason": null
+  "cycle_score": 28,
+  "degraded": true,
+  "degraded_reason": "CoinMetrics 不可用（CoinMetrics: invalid MVRV value），使用降级数据源"
 }
