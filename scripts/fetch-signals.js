@@ -32,8 +32,12 @@ function clamp01(v, lo, hi) { return Math.max(0, Math.min(1, (v - lo) / (hi - lo
 // MVRV ratio DCA 决策区间：~0.7（深度底部，所有持仓大幅亏损）到 ~3.5（牛市高位）
 // 注：使用 DCA 相关区间而非全历史极值（历史最高 8+），避免牛顶极值把正常低估区压得过低
 function normalizeMvrv(v)   { return Math.round(clamp01(v, 0.7, 3.5)  * 100); }
-// Puell Multiple：~0.3（底部）到 ~4（顶部）
-function normalizePuell(v)  { return Math.round(clamp01(v, 0.3, 4)    * 100); }
+// Puell Multiple：对数归一化，log(0.3)→0，log(4)→100
+// 原因：线性下 0.3–1.0 区间压缩过重，无法区分温和熊市与极端底部
+function normalizePuell(v) {
+  const lo = Math.log(0.3), hi = Math.log(4.0);
+  return Math.round(clamp01(Math.log(Math.max(v, 0.01)), lo, hi) * 100);
+}
 // NUPL：-0.3（底部）到 +0.75（顶部）
 function normalizeNupl(v)   { return Math.round(clamp01(v, -0.3, 0.75)* 100); }
 // 交易所储备量（BTC）：历史区间 180万–320万

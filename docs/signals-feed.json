@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-16T06:49Z",
+  "updated_at": "2026-06-16T07:06Z",
   "mvrv_ratio": {
     "value": 1.2394,
     "normalized_score": 19,
@@ -7,7 +7,7 @@
   },
   "puell_multiple": {
     "value": 0.7454,
-    "normalized_score": 12,
+    "normalized_score": 35,
     "updated_at": "2026-06-16"
   },
   "nupl": {
@@ -27,10 +27,10 @@
     "updated_at": "2026-06-16"
   },
   "funding_rate": {
-    "value": -0.000045,
+    "value": -0.00005,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 46,
+    "normalized_score": 45,
     "updated_at": "2026-06-16"
   },
   "halving_cycle": {
@@ -44,7 +44,7 @@
     "updated_at": "2026-06-16"
   },
   "current_price": 61658,
-  "cycle_score": 28,
+  "cycle_score": 32,
   "degraded": false,
   "degraded_reason": null
 }
