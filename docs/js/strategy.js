@@ -73,9 +73,9 @@ function generateStrategy(scores) {
   else if (r >= 3 && kn >= 3) maxSinglePct = 20;
   else                        maxSinglePct = 15;
 
-  // 基础池触发门槛：与普通信号触发门槛对齐（≤ 28），确保基础池和信号池在同一市场条件下启动
-  // 对所有当前画像等效于 28（entryThreshold 最低为 35）
-  const baseBulletEntryScore = Math.min(28, entryThreshold);
+  // 基础池触发门槛：35 分（约等于 200dMA 跌破时对应的周期分水位）
+  // 信号池保留严格条件（≤28 + 多指标共振），确保两池先后有序启动
+  const baseBulletEntryScore = Math.min(35, entryThreshold);
 
   return {
     base_bullet_pct:              basePct,
@@ -263,7 +263,6 @@ function evaluateAllSignalLevels(data) {
   const mvrzVal  = data.mvrv_ratio?.value        ?? 999;
   const fgiVal   = data.fgi?.value              ?? 50;
   const puellVal = data.puell_multiple?.value   ?? 999;
-  const ma200Val = data.ma_200d?.multiplier     ?? 999;
 
   const normScores = [
     data.mvrv_ratio?.normalized_score         ?? 50,
@@ -287,16 +286,11 @@ function evaluateAllSignalLevels(data) {
       actionPct:   '信号池 6%',
       cooldownKey: 'normal_signal_cooldown_days',
       cooldownWhy: '每次消耗 6%，配合冷静期可覆盖约 16 次触发窗口（约 4 个月），不会在底部早段就耗尽弹药。',
-      note:        '标准路径（3项全满足）或 200dMA 备选路径（3项全满足）任一触发',
+      note:        '3 项全部满足触发',
       conditions: [
-        { text: '── 标准路径 ──',           value: '以下3项全满足',                          met: score<=28 && looseCount>=5 && mvrzVal<1.5 },
         { text: '周期分 ≤ 28',              value: `当前 ${score}`,                          met: score <= 28 },
         { text: '8 指标中 5 项以上低估',    value: `当前 ${looseCount}/8 项归一化分 ≤ 40`, met: looseCount >= 5 },
         { text: 'MVRV ratio < 1.5',         value: `当前 ${mvrzVal.toFixed(2)}`,             met: mvrzVal < 1.5 },
-        { text: '── 均线备选路径 ──',       value: '以下3项全满足',                          met: ma200Val<1.0 && fgiVal<40 && score<=35 },
-        { text: '200日均线乘数 < 1.0',      value: `当前 ×${ma200Val < 900 ? ma200Val.toFixed(3) : '--'}`, met: ma200Val < 1.0 },
-        { text: 'FGI < 40（情绪偏空）',     value: `当前 ${fgiVal}`,                         met: fgiVal < 40 },
-        { text: '周期分 ≤ 35',              value: `当前 ${score}`,                          met: score <= 35 },
       ],
     },
     {

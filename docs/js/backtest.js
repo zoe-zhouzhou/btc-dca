@@ -398,10 +398,8 @@ function detectSignalForBacktest(idx, data) {
   // 加速信号：MVRV ratio<1.2（Z<-0.86）对应接近已实现市值
   if (score <= 30 && strictCount >= strictNeed && mvrvZ < -0.86 && fgiVal < 15) return 'accel';
 
-  // 普通信号 — 标准路径：MVRV ratio<1.5（Z<-0.43）对应估值偏低
+  // 普通信号：MVRV ratio<1.5（Z<-0.43）对应估值偏低
   if (score <= 28 && looseCount >= looseNeed && mvrvZ < -0.43) return 'normal';
-  // 普通信号 — 200dMA 备选路径：价格跌破长期均线且情绪偏空
-  if (ma200 < 1.0 && fgiVal < 40 && score <= 35) return 'normal';
 
   return 'none';
 }

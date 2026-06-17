@@ -118,7 +118,6 @@ function detectSignalLevel(data) {
   const mvrzVal  = data.mvrv_ratio?.value           ?? 999;
   const fgiVal   = data.fgi?.value              ?? 50;
   const puellVal = data.puell_multiple?.value   ?? 999;
-  const ma200Val = data.ma_200d?.multiplier     ?? 999;
 
   // 8 项归一化分数列表
   const scores = [
@@ -206,40 +205,25 @@ function detectSignalLevel(data) {
     };
   }
 
-  // 普通信号 — 标准路径：score≤28 + 5+ 项宽松低分区 + MVRV ratio<1.5
+  // 普通信号：score≤28 + 5+ 项宽松低分区 + MVRV ratio<1.5
+  const conditionList = [
+    { met: score <= 28,     text: `综合周期分 ${score}（≤ 28）` },
+    { met: looseCount >= 5, text: `${looseCount}/8 项指标归一化 ≤ 40，低估共振` },
+    { met: mvrzVal < 1.5,   text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.5，估值偏低）` },
+  ];
+
   if (score <= 28 && looseCount >= 5 && mvrzVal < 1.5) {
     return {
       level: 'normal', label: '普通定投信号',
       detail: '市场进入低廉估值区，维持正常定投节奏',
-      conditions: [
-        { met: score <= 28,     text: `综合周期分 ${score}（≤ 28）` },
-        { met: looseCount >= 5, text: `${looseCount}/8 项指标归一化 ≤ 40，低估共振` },
-        { met: mvrzVal < 1.5,   text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.5，估值偏低）` },
-      ],
-    };
-  }
-
-  // 普通信号 — 200dMA 备选路径：价格跌破长期均线且情绪偏空
-  if (ma200Val < 1.0 && fgiVal < 40 && score <= 35) {
-    return {
-      level: 'normal', label: '普通定投信号（均线路径）',
-      detail: '价格跌破 200 日均线且市场情绪偏空，建议开始基础定投',
-      conditions: [
-        { met: true,        text: `200日均线乘数 ×${ma200Val.toFixed(3)}（< 1.0，价格低于长期均线）` },
-        { met: fgiVal < 40, text: `恐慌贪婪指数 ${fgiVal}（< 40，情绪偏空）` },
-        { met: score <= 35, text: `周期分 ${score}（≤ 35，熊市积累区）` },
-      ],
+      conditions: conditionList,
     };
   }
 
   return {
     level: 'none', label: '无信号',
     detail: '当前估值偏高或中性，保持基础定投节奏',
-    conditions: [
-      { met: score <= 28,     text: `综合周期分 ${score}（≤ 28）` },
-      { met: looseCount >= 5, text: `${looseCount}/8 项指标归一化 ≤ 40，低估共振` },
-      { met: mvrzVal < 1.5,   text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.5）` },
-    ],
+    conditions: conditionList,
   };
 }
 
