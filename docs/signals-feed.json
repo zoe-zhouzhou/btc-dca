@@ -1,22 +1,22 @@
 {
-  "updated_at": "2026-06-18T02:32Z",
+  "updated_at": "2026-06-18T07:25Z",
   "mvrv_ratio": {
-    "value": 1.2287,
-    "normalized_score": 19,
+    "value": 1.2059,
+    "normalized_score": 18,
     "updated_at": "2026-06-18"
   },
   "puell_multiple": {
-    "value": 0.7988,
-    "normalized_score": 38,
+    "value": 0.6391,
+    "normalized_score": 29,
     "updated_at": "2026-06-18"
   },
   "adr_act": {
-    "ratio": null,
-    "normalized_score": 47,
-    "updated_at": "2026-06-17"
+    "ratio": 0.92,
+    "normalized_score": 44,
+    "updated_at": "2026-06-18"
   },
   "exchange_reserves": {
-    "btc_amount": 2640846.07032967,
+    "btc_amount": 2643606.34600749,
     "normalized_score": 40,
     "updated_at": "2026-06-18"
   },
@@ -27,10 +27,10 @@
     "updated_at": "2026-06-18"
   },
   "funding_rate": {
-    "value": -0.000019,
+    "value": 0.000033,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 48,
+    "normalized_score": 53,
     "updated_at": "2026-06-18"
   },
   "halving_cycle": {
@@ -39,13 +39,13 @@
     "updated_at": "2026-06-18"
   },
   "ma_200d": {
-    "multiplier": 0.797,
-    "ma_value": 77405,
+    "multiplier": 0.798,
+    "ma_value": 77273,
     "normalized_score": 15,
     "updated_at": "2026-06-18"
   },
   "current_price": 61658,
-  "cycle_score": 29,
-  "degraded": true,
-  "degraded_reason": "CoinMetrics 不可用（CoinMetrics: invalid MVRV value），使用降级数据源"
+  "cycle_score": 27,
+  "degraded": false,
+  "degraded_reason": null
 }
