@@ -103,9 +103,9 @@
     <div class="i-section-title">后续使用</div>
     <div class="i-section-body">
       <div class="i-step-desc" style="margin-bottom:8px">初始化完成后，每次打开 Claude Code / OpenClaw 输入以下命令唤起助手：</div>
-      <div class="i-code-block">
-        <code>/btc-dca-skill</code>
-        <button class="i-copy-btn" data-copy="/btc-dca-skill">复制</button>
+      <div class="i-msg-box">
+        <div class="i-msg-text" style="font-family:'SFMono-Regular','Consolas','Menlo',monospace">/btc-dca-skill</div>
+        <button class="i-msg-copy-btn" data-copy="/btc-dca-skill">复制</button>
       </div>
       <div class="i-step-desc" style="margin-top:16px;margin-bottom:4px">常用指令：</div>
       <div class="i-verify-output">
@@ -190,15 +190,15 @@
   bindMsgCopy('iOcMsgCopy', 'iOcMsgText');
   bindMsgCopy('iCcMsgCopy', 'iCcMsgText');
 
-  /* ── 通用复制按钮（代码块） ── */
+  /* ── 通用复制按钮（代码块 + 带 data-copy 的消息按钮） ── */
   document.addEventListener('click', function (e) {
-    var btn = e.target.closest('.i-copy-btn');
+    var btn = e.target.closest('.i-copy-btn, .i-msg-copy-btn[data-copy]');
     if (!btn) return;
     var text = btn.getAttribute('data-copy') ||
                btn.closest('.i-code-block')?.querySelector('code')?.textContent || '';
     navigator.clipboard.writeText(text).then(function () {
       var orig = btn.textContent;
-      btn.textContent = '已复制';
+      btn.textContent = '已复制 ✓';
       setTimeout(function () { btn.textContent = orig; }, 1800);
     });
   });
