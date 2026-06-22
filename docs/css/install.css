@@ -339,6 +339,40 @@
 }
 .i-copy-btn:hover { border-color: var(--t2); color: var(--t2); }
 
+/* ── 一键安装消息框 ──────────────────────────────── */
+.i-msg-box {
+  background: var(--card-2);
+  border-radius: var(--radius-sm);
+  padding: 14px 14px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.i-msg-text {
+  font-size: 13.5px;
+  color: var(--t1);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: var(--font);
+}
+
+.i-msg-copy-btn {
+  align-self: flex-end;
+  background: var(--cta-bg);
+  color: #f0ede8;
+  border: none;
+  border-radius: var(--radius-xs);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.i-msg-copy-btn:hover { opacity: 0.82; }
+
 /* ── 验证区 ──────────────────────────────── */
 .i-verify-output {
   background: var(--card-2);

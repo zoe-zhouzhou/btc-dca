@@ -69,129 +69,33 @@
   <!-- ② 安装步骤（OpenClaw） -->
   <section class="i-section" id="stepsOpenclaw">
     <div class="i-section-num">02</div>
-    <div class="i-section-title">安装步骤 · OpenClaw</div>
+    <div class="i-section-title">一键安装 · OpenClaw</div>
     <div class="i-section-body">
-
-      <div class="i-step">
-        <div class="i-step-num">1</div>
-        <div class="i-step-body">
-          <div class="i-step-title">安装 Skill</div>
-          <div class="i-step-desc">一行命令下载 Skill 并安装依赖，无需克隆整个仓库：</div>
-          <div class="i-code-block">
-            <code>npx degit zoe-zhouzhou/btc-dca/btc-dca-skill ~/skills/btc-dca-skill && npm install --prefix ~/skills/btc-dca-skill</code>
-            <button class="i-copy-btn" data-copy="npx degit zoe-zhouzhou/btc-dca/btc-dca-skill ~/skills/btc-dca-skill && npm install --prefix ~/skills/btc-dca-skill">复制</button>
-          </div>
-        </div>
+      <div class="i-step-desc" style="margin-bottom:12px">复制下面这条消息，粘贴到 OpenClaw 对话框并发送，OpenClaw 会自动完成下载、安装和初始化引导：</div>
+      <div class="i-msg-box" id="iOcMsgBox">
+        <div class="i-msg-text" id="iOcMsgText">帮我安装 BTC 定投 Skill 并完成初始化。
+源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/skills/btc-dca-skill</div>
+        <button class="i-msg-copy-btn" id="iOcMsgCopy">复制</button>
       </div>
-
-      <div class="i-step">
-        <div class="i-step-num">2</div>
-        <div class="i-step-body">
-          <div class="i-step-title">启动 Skill 对话</div>
-          <div class="i-step-desc">Skill 检测到未初始化，会自动引导你完成安装：设置预算、配置推送渠道、建立每日定时检测。</div>
-          <div class="i-code-block">
-            <code>openclaw chat --skill ~/skills/btc-dca-skill/SKILL.md</code>
-            <button class="i-copy-btn" data-copy="openclaw chat --skill ~/skills/btc-dca-skill/SKILL.md">复制</button>
-          </div>
-          <!-- 导入码 widget，安装对话中需要用到 -->
-          <div id="iOcCodeSlot"><!-- iCodeWidget 初始在此 --></div>
-        </div>
-      </div>
-
-      <div class="i-step">
-        <div class="i-step-num">3</div>
-        <div class="i-step-body">
-          <div class="i-step-title">Skill 自动设置每日定时推送</div>
-          <div class="i-step-desc">安装完成后，Skill 会调用 <code>openclaw cron add</code> 注册每日 08:00 的自动任务。每天早报必达：周期评分、价格、子弹剩余；触发定投条件时在早报后追加买入提醒。</div>
-        </div>
-      </div>
-
+      <div id="iOcCodeSlot"></div>
     </div>
   </section>
 
   <!-- ② 安装步骤（Claude Code） -->
   <section class="i-section" id="stepsClaudeCode" style="display:none">
     <div class="i-section-num">02</div>
-    <div class="i-section-title">安装步骤 · Claude Code</div>
+    <div class="i-section-title">一键安装 · Claude Code</div>
     <div class="i-section-body">
-
-      <div class="i-step">
-        <div class="i-step-num">1</div>
-        <div class="i-step-body">
-          <div class="i-step-title">安装 Skill</div>
-          <div class="i-step-desc">一行命令下载 Skill 并安装依赖：</div>
-          <div class="i-code-block">
-            <code>npx degit zoe-zhouzhou/btc-dca/btc-dca-skill ~/.claude/skills/btc-dca-skill && npm install --prefix ~/.claude/skills/btc-dca-skill</code>
-            <button class="i-copy-btn" data-copy="npx degit zoe-zhouzhou/btc-dca/btc-dca-skill ~/.claude/skills/btc-dca-skill && npm install --prefix ~/.claude/skills/btc-dca-skill">复制</button>
-          </div>
-        </div>
+      <div class="i-step-desc" style="margin-bottom:12px">复制下面这条消息，粘贴到 Claude Code 对话框并发送，Claude Code 会自动完成下载、安装和初始化引导：</div>
+      <div class="i-msg-box" id="iCcMsgBox">
+        <div class="i-msg-text" id="iCcMsgText">帮我安装 BTC 定投 Skill 并完成初始化。
+源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/.claude/skills/btc-dca-skill</div>
+        <button class="i-msg-copy-btn" id="iCcMsgCopy">复制</button>
       </div>
-
-      <div class="i-step">
-        <div class="i-step-num">2</div>
-        <div class="i-step-body">
-          <div class="i-step-title">启动 Skill 对话</div>
-          <div class="i-step-desc">在 Claude Code 中输入以下斜杠命令，Skill 检测到未初始化后会自动引导你完成配置：输入导入码、设置预算、配置 Telegram Bot。</div>
-          <div class="i-code-block">
-            <code>/btc-dca-skill</code>
-            <button class="i-copy-btn" data-copy="/btc-dca-skill">复制</button>
-          </div>
-          <!-- 导入码 widget 移入此处（切换平台时） -->
-          <div id="iCcCodeSlot"></div>
-        </div>
-      </div>
-
-      <div class="i-step">
-        <div class="i-step-num">3</div>
-        <div class="i-step-body">
-          <div class="i-step-title">（可选）配置 Telegram 推送</div>
-          <div class="i-step-desc">在 <a href="https://t.me/BotFather" class="i-link" target="_blank">@BotFather</a> 创建 Bot，获取 Token 和 Chat ID，安装流程中会引导你完成。</div>
-          <div class="i-step-desc" style="margin-top:8px">也可以跳过，信号提醒将在 Claude Code 对话内展示。</div>
-        </div>
-      </div>
-
-      <div class="i-step">
-        <div class="i-step-num">4</div>
-        <div class="i-step-body">
-          <div class="i-step-title">Skill 自动注册系统 crontab</div>
-          <div class="i-step-desc">安装完成后，Skill 会调用 <code>crontab</code> 注册每日 08:00 的自动任务。每天通过 Telegram 发送早报（周期评分、价格、子弹剩余）；触发定投条件时在同一条消息内追加买入提醒。</div>
-        </div>
-      </div>
-
+      <div id="iCcCodeSlot"></div>
+      <div class="i-step-desc" style="margin-top:12px;color:var(--t3)">Telegram 推送为可选项，Skill 安装过程中会询问，跳过后信号提醒在 Claude Code 对话内展示。</div>
     </div>
   </section>
-
-  <!-- 导入码 widget（单例，随平台切换在 iOcCodeSlot / iCcCodeSlot 间移动） -->
-  <div id="iCodeWidget" style="display:none">
-    <div class="i-code-widget-label">Skill 安装时会要求你输入导入码：</div>
-
-    <!-- 生成 / 读取中 -->
-    <div class="i-code-loading" id="iCodeLoading" style="display:none">
-      <div class="i-spinner"></div>
-      <span id="iLoadingText">生成中…</span>
-    </div>
-
-    <!-- 成功：大字展示 -->
-    <div id="iCodeResult" style="display:none">
-      <div class="i-code-display-box" style="margin-top:0">
-        <div class="i-code-display-label">你的导入码（7 天有效）</div>
-        <div class="i-code-display-digits" id="iCodeDisplayDigits">——</div>
-        <button class="i-code-display-copy" id="iCodeDisplayCopy">复制导入码</button>
-      </div>
-    </div>
-
-    <!-- API 出错（网络 / 服务器） -->
-    <div id="iCodeApiError" style="display:none">
-      <p class="i-code-widget-label" id="iCodeApiErrorMsg" style="color:var(--red)">生成失败，请检查网络后重试。</p>
-      <button class="i-error-retry" id="iErrorRetry">重试</button>
-    </div>
-
-    <!-- 无策略数据（未完成问卷） -->
-    <div id="iCodeNoStrategy" style="display:none">
-      <p class="i-code-widget-label">请先完成问卷，生成你的个性化策略。</p>
-      <a href="questionnaire.html" class="i-link">前往问卷页 →</a>
-    </div>
-  </div>
 
   <!-- ③ 验证安装 -->
   <section class="i-section">
@@ -241,16 +145,9 @@
 <script>
 (function () {
 
-  var currentCode = '';
-
-  /* ── widget 单例：随平台切换移动 ── */
-  var widget = document.getElementById('iCodeWidget');
-
-  function placeWidget(platform) {
-    var slot = document.getElementById(platform === 'openclaw' ? 'iOcCodeSlot' : 'iCcCodeSlot');
-    slot.appendChild(widget);
-    widget.style.display = '';
-  }
+  var OC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/skills/btc-dca-skill';
+  var CC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/.claude/skills/btc-dca-skill';
+  var CODE_SUFFIX = '\n导入码：';
 
   /* ── 平台切换 ── */
   window.switchPlatform = function (p) {
@@ -260,57 +157,35 @@
     document.getElementById('pdClaudeCode').style.display    = p === 'claudecode' ? '' : 'none';
     document.getElementById('stepsOpenclaw').style.display   = p === 'openclaw'   ? '' : 'none';
     document.getElementById('stepsClaudeCode').style.display = p === 'claudecode' ? '' : 'none';
-    placeWidget(p);
   };
 
-  /* ── 状态机 ── */
-  var elLoading    = document.getElementById('iCodeLoading');
-  var elResult     = document.getElementById('iCodeResult');
-  var elApiError   = document.getElementById('iCodeApiError');
-  var elNoStrategy = document.getElementById('iCodeNoStrategy');
-
-  function showState(state) {
-    elLoading.style.display    = state === 'loading'     ? 'flex'  : 'none';
-    elResult.style.display     = state === 'result'      ? 'block' : 'none';
-    elApiError.style.display   = state === 'api-error'   ? 'block' : 'none';
-    elNoStrategy.style.display = state === 'no-strategy' ? 'block' : 'none';
+  /* ── 生成消息文本（有码则追加） ── */
+  function buildMsg(base, code) {
+    return code ? (base + CODE_SUFFIX + code) : base;
   }
 
-  /* ── 解码 URL ?code= 并展示 ── */
-  function loadCode(code) {
-    var data = decodeImportCode(code);
-    if (!data) {
-      /* 解码失败：尝试从 localStorage 重新生成 */
-      var scores = readScores();
-      if (scores) { generateCode(scores); } else { showState('no-strategy'); }
-      return;
-    }
-    currentCode = code;
-    document.getElementById('iCodeDisplayDigits').textContent = code;
-    showState('result');
+  /* ── 更新消息框内容 ── */
+  function setMsgTexts(code) {
+    document.getElementById('iOcMsgText').textContent = buildMsg(OC_BASE, code);
+    document.getElementById('iCcMsgText').textContent = buildMsg(CC_BASE, code);
   }
 
-  /* ── 从 localStorage 策略数据本地生成码 ── */
-  function generateCode(scores) {
-    var personaKey = matchPersona(scores);
-    var strategy   = generateStrategy(scores);
-    var code       = encodeImportCode(personaKey, strategy);
-    currentCode    = code;
-    document.getElementById('iCodeDisplayDigits').textContent = code;
-    showState('result');
-  }
-
-  /* ── 复制导入码 ── */
-  document.getElementById('iCodeDisplayCopy').addEventListener('click', function () {
-    if (!currentCode) return;
-    navigator.clipboard.writeText(currentCode).then(function () {
-      var btn = document.getElementById('iCodeDisplayCopy');
-      btn.textContent = '已复制';
-      setTimeout(function () { btn.textContent = '复制导入码'; }, 1800);
+  /* ── 消息框复制按钮 ── */
+  function bindMsgCopy(btnId, textId) {
+    document.getElementById(btnId).addEventListener('click', function () {
+      var text = document.getElementById(textId).textContent;
+      navigator.clipboard.writeText(text).then(function () {
+        var btn = document.getElementById(btnId);
+        var orig = btn.textContent;
+        btn.textContent = '已复制 ✓';
+        setTimeout(function () { btn.textContent = orig; }, 1800);
+      });
     });
-  });
+  }
+  bindMsgCopy('iOcMsgCopy', 'iOcMsgText');
+  bindMsgCopy('iCcMsgCopy', 'iCcMsgText');
 
-  /* ── 通用复制按钮 ── */
+  /* ── 通用复制按钮（代码块） ── */
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.i-copy-btn');
     if (!btn) return;
@@ -334,21 +209,21 @@
     chip.style.display = 'flex';
   }
 
-  /* ── 初始化 ── */
-  placeWidget('openclaw');
-
+  /* ── 初始化：解析导入码并注入消息框 ── */
   var urlCode = new URLSearchParams(location.search).get('code');
   var scores  = readScores();
+  var code    = null;
 
-  if (scores) renderPersonaChip(scores);
-
-  if (urlCode) {
-    loadCode(urlCode);            /* 正常流程：从 strategy.html 带码过来 */
+  if (urlCode && decodeImportCode(urlCode)) {
+    code = urlCode;
   } else if (scores) {
-    generateCode(scores);         /* 直接访问，但有策略数据：自动生成 */
-  } else {
-    showState('no-strategy');     /* 没做过问卷，提示去问卷页 */
+    var personaKey = matchPersona(scores);
+    var strategy   = generateStrategy(scores);
+    code = encodeImportCode(personaKey, strategy);
   }
+
+  setMsgTexts(code);
+  if (scores) renderPersonaChip(scores);
 
 })();
 </script>
