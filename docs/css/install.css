@@ -373,34 +373,6 @@
 }
 .i-msg-copy-btn:hover { opacity: 0.82; }
 
-/* ── 唤起提示块 ──────────────────────────────── */
-.i-invoke-hint {
-  background: var(--cta-bg);
-  border-radius: var(--radius);
-  padding: 18px 20px;
-  text-align: center;
-}
-
-.i-invoke-label {
-  font-size: 12px;
-  color: rgba(240,237,232,0.55);
-  margin-bottom: 8px;
-}
-
-.i-invoke-cmd {
-  font-family: 'SFMono-Regular', 'Consolas', 'Menlo', monospace;
-  font-size: 22px;
-  font-weight: 700;
-  color: #f0ede8;
-  letter-spacing: 0.5px;
-}
-
-.i-invoke-sub {
-  font-size: 12px;
-  color: rgba(240,237,232,0.55);
-  margin-top: 6px;
-}
-
 /* ── 验证区 ──────────────────────────────── */
 .i-verify-output {
   background: var(--card-2);
