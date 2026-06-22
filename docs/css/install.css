@@ -360,7 +360,7 @@
 
 .i-msg-copy-btn {
   align-self: flex-end;
-  background: var(--cta-bg);
+  background: #1c1c1e;
   color: #f0ede8;
   border: none;
   border-radius: var(--radius-xs);
