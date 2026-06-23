@@ -63,84 +63,99 @@ const LEVEL_LABEL = {
 
 // ── 消息构建 ──────────────────────────────────────────────────────────────
 
+const SEP = '─'.repeat(20);
+
 function buildMessage(ctx) {
   const { trigger, cycleScore, price, budget, poolRemaining, strategyDoc, local } = ctx;
   const s = strategyDoc?.strategy ?? {};
 
-  // ── 无触发 ──
-  if (trigger.trigger === 'none') {
-    const parts = [
-      '【BTC 定投 · 今日检测】',
-      '',
-      `周期评分：${cycleScore} 分（${scoreZone(cycleScore)}）`,
-    ];
-    if (price) parts.push(`当前价格：${fmtUSD(price)}`);
-    parts.push('', '今日未满足触发条件，继续等待。');
-    return parts.join('\n');
-  }
+  const priceStr = price ? `BTC ${fmtUSD(price)}` : '';
+  const scoreStr = `周期分 ${cycleScore}/100（${scoreZone(cycleScore)}）`;
+  const marketLine = [priceStr, scoreStr].filter(Boolean).join(' · ');
 
   // ── 数据过期 ──
   if (trigger.trigger === 'stale') {
     return [
-      '⚠️【信号数据延迟】',
+      '【BTC 定投早报】',
       '',
-      'signals-feed.json 超过 48 小时未更新。',
-      '已暂停信号型定投，时间型定投照常执行。',
+      '⚠️ 链上数据超过 48 小时未更新，信号判断暂停。',
+      '时间型定投今天照常执行，信号型跳过。',
       '',
       '请检查 GitHub Actions 是否正常运行。',
     ].join('\n');
   }
 
-  // ── 时间触发 ──
-  if (trigger.trigger === 'time_base') {
-    const freq        = s.dca_frequency || 'biweekly';
-    const totalBatches = freq === 'weekly' ? 34 : 17;           // 8个月底部窗口
-    const batchesDone = trigger.trades_count ?? 0;
-    const remaining   = Math.max(1, totalBatches - batchesDone);
-    const perBatch    = budget > 0 ? Math.round(poolRemaining.base / remaining) : 0;
-    const freqLabel   = freq === 'weekly' ? '每周' : '每两周';
+  // ── 无触发 ──
+  if (trigger.trigger === 'none') {
+    return [
+      '【BTC 定投早报】',
+      '',
+      '今天：观望，不操作',
+      '',
+      marketLine,
+      '条件未达触发门槛，按原计划等待。',
+    ].join('\n');
+  }
 
-    const parts = [
-      '【BTC 定投提醒 · 时间型】',
-      '',
-      `今天是你的定投日（${freqLabel}）。`,
-      '',
-      `当前市场：周期评分 ${cycleScore} 分，${scoreZone(cycleScore)}`,
-    ];
-    if (price) parts.push(`当前价格：${fmtUSD(price)}`);
+  // ── 时间触发（定投日）──
+  if (trigger.trigger === 'time_base') {
+    const freq         = s.dca_frequency || 'biweekly';
+    const totalBatches = freq === 'weekly' ? 34 : 17;
+    const batchesDone  = trigger.trades_count ?? 0;
+    const remaining    = Math.max(1, totalBatches - batchesDone);
+    const perBatch     = budget > 0 ? Math.round(poolRemaining.base / remaining) : 0;
+    const batchLabel   = `第 ${batchesDone + 1}/${totalBatches} 次`;
+
+    const parts = ['【BTC 定投早报】', ''];
+
     if (perBatch > 0) {
-      parts.push(`建议买入：${fmtCNY(perBatch)}（基础池分批，剩余 ${fmtCNY(poolRemaining.base)}）`);
+      parts.push(`今天：买入 ${fmtCNY(perBatch)}`, '');
+      parts.push(`打开交易所，买入约 ${fmtCNY(perBatch)} 的 BTC`);
+    } else {
+      parts.push('今天：定投日', '');
+      parts.push('打开交易所，按策略金额买入 BTC');
     }
-    parts.push(
-      '',
-      '操作步骤：',
-      '1. 打开你的交易所',
-      perBatch > 0 ? `2. 买入约 ${fmtCNY(perBatch)} 的 BTC` : '2. 按策略金额买入 BTC',
-      '3. 买完回复：已买入 @成交价（例：已买入 @66200）',
-    );
+    parts.push('买完回复：已买入 @成交价（例：已买入 @66200）');
+    parts.push('');
+    parts.push(SEP);
+    parts.push(marketLine);
+    parts.push(`基础仓位 ${batchLabel}，剩余额度 ${fmtCNY(poolRemaining.base)}`);
     return parts.join('\n');
   }
 
   // ── 信号触发 ──
   if (trigger.trigger.startsWith('signal_')) {
-    const level    = trigger.signal_level;
-    const execPct  = trigger.exec_pct ?? 0;
+    const level     = trigger.signal_level;
+    const execPct   = trigger.exec_pct ?? 0;
     const isExtreme = level === 'quasi' || level === 'extreme';
-    const pool     = isExtreme ? poolRemaining.extreme : poolRemaining.signal;
-    const poolName = isExtreme ? '极端池' : '信号池';
-    const amount   = budget > 0 ? Math.round(pool * execPct) : 0;
+    const pool      = isExtreme ? poolRemaining.extreme : poolRemaining.signal;
+    const poolLabel = isExtreme ? '加仓弹药' : '信号弹药';
+    const amount    = budget > 0 ? Math.round(pool * execPct) : 0;
 
-    const parts = [
-      `【信号触发 · ${LEVEL_LABEL[level] ?? level}】`,
-      '',
-      `当前周期评分：${cycleScore} 分（${scoreZone(cycleScore)}）`,
-    ];
-    if (price) parts.push(`当前价格：${fmtUSD(price)}`);
+    const SIGNAL_DESC = {
+      normal:  '链上多项指标低估，触发加仓',
+      accel:   '多指标深度低估共振，加速加仓',
+      quasi:   '接近历史极端底部，重点加仓',
+      extreme: '历史级别极端底部，集中加仓',
+    };
+
+    const parts = ['【BTC 定投早报】', ''];
+
     if (amount > 0) {
-      parts.push(`建议买入：${fmtCNY(amount)}（${poolName} × ${(execPct * 100).toFixed(0)}%）`);
-      parts.push(`${poolName}剩余：${fmtCNY(pool)}`);
+      parts.push(`今天：${LEVEL_LABEL[level] ?? '信号触发'}，买入 ${fmtCNY(amount)}`, '');
+      parts.push(`打开交易所，买入约 ${fmtCNY(amount)} 的 BTC`);
+    } else {
+      parts.push(`今天：${LEVEL_LABEL[level] ?? '信号触发'}`, '');
+      parts.push('打开交易所，按策略金额买入 BTC');
     }
-    parts.push('', '买完回复：已买入 @成交价（例：已买入 @66200）');
+    parts.push('买完回复：已买入 @成交价（例：已买入 @66200）');
+    parts.push('');
+    parts.push(SEP);
+    parts.push(marketLine);
+    parts.push(SIGNAL_DESC[level] ?? '');
+    if (amount > 0) {
+      parts.push(`${poolLabel}剩余 ${fmtCNY(pool)}，本次动用 ${(execPct * 100).toFixed(0)}%`);
+    }
     return parts.join('\n');
   }
 
