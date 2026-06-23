@@ -164,12 +164,12 @@ async function main() {
 
   const cycleScore      = computeCycleScore(feed);
   const entryThreshold  = strategyDoc.entry_threshold ?? 50;
-  const baseBulletEntry = Math.min(35, entryThreshold);
+  const baseBulletEntry = s.base_pool_entry_score ?? Math.min(35, entryThreshold);
 
-  // ── 时间触发 ──
-  const timeTrigger = isTimeTriggerDay(s, trades) && cycleScore <= entryThreshold;
+  // ── 时间触发（基础池）：使用 base_pool_entry_score，比 entry_threshold 更严格 ──
+  const timeTrigger = isTimeTriggerDay(s, trades) && cycleScore <= baseBulletEntry;
 
-  // ── 信号触发 ──
+  // ── 信号触发：信号条件本身已要求 ≤28，entry_threshold 作为外层门槛 ──
   const signalLevel     = detectSignalLevel(feed);
   const cooldownLeft    = signalLevel !== 'none'
     ? signalCooldownRemaining(signalLevel, s, trades)
