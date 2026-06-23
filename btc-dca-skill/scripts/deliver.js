@@ -186,7 +186,6 @@ function buildMessage(ctx) {
     const perBatch  = budget > 0 ? Math.round(poolRemaining.base / remaining) : 0;
     ln(`今天是本期定投日（${freqLabel}）`, '');
     if (perBatch > 0) ln(`👉 买入约 ${fmtCNY(perBatch)}（第 ${batchesDone + 1}/${totalBatches} 批）`);
-    ln('买完回复：已买入 @成交价（例：已买入 @61000）');
     if (perBatch > 0 && budget > 0) ln(`基础池剩余 ${fmtCNY(poolRemaining.base)}`);
   } else if (periodBuys.length > 0) {
     const done     = periodBuys[0];
@@ -217,7 +216,6 @@ function buildMessage(ctx) {
     ln(SEP, `⚡ 信号池  ${LEVEL_LABEL[signalLevel] ?? signalLevel}触发`);
     ln(SIGNAL_WHY[signalLevel] ?? '', '');
     if (amount > 0) ln(`👉 立即买入约 ${fmtCNY(amount)}`);
-    ln('买完回复：已买入 @成交价（例：已买入 @61000）');
     if (amount > 0 && budget > 0) {
       ln(`${signalPoolLabel}剩余 ${fmtCNY(signalPool)}，本次动用 ${(execPct * 100).toFixed(0)}%`);
     }
