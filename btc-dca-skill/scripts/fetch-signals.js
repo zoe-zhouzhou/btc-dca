@@ -60,16 +60,22 @@ async function fetchBinanceData() {
   // 当前价格（多源兜底）
   const currentPrice = await fetchCurrentPrice();
 
-  // 日线 K 线：7天 + 30天
-  const [klines7d, klines30d] = await Promise.all([
-    fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=8', { signal: AbortSignal.timeout(8000) }).then(r => r.json()),
-    fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=31', { signal: AbortSignal.timeout(8000) }).then(r => r.json()),
-  ]);
-
-  const price7dAgo  = parseFloat(klines7d[0][1]);
-  const price30dAgo = parseFloat(klines30d[0][1]);
-  const change7d    = (currentPrice - price7dAgo)  / price7dAgo;
-  const change30d   = (currentPrice - price30dAgo) / price30dAgo;
+  // 日线 K 线：7天 + 30天（Binance 不可用时跳过）
+  let change7d = null, change30d = null;
+  try {
+    const [klines7d, klines30d] = await Promise.all([
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=8', { signal: AbortSignal.timeout(8000) }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=31', { signal: AbortSignal.timeout(8000) }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+    ]);
+    if (Array.isArray(klines7d) && Array.isArray(klines30d)) {
+      const price7dAgo  = parseFloat(klines7d[0][1]);
+      const price30dAgo = parseFloat(klines30d[0][1]);
+      change7d  = (currentPrice - price7dAgo)  / price7dAgo;
+      change30d = (currentPrice - price30dAgo) / price30dAgo;
+    }
+  } catch {
+    // klines 不影响主逻辑，Binance 不可用时忽略
+  }
 
   // 200 周均线（周线 K 线最近 200 根的收盘价均值）
   let ma200w = null;
@@ -77,9 +83,11 @@ async function fetchBinanceData() {
     const weeklyKlines = await fetch(
       'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=200',
       { signal: AbortSignal.timeout(10000) }
-    ).then(r => r.json());
-    const closes = weeklyKlines.map(k => parseFloat(k[4]));
-    ma200w = closes.reduce((sum, p) => sum + p, 0) / closes.length;
+    ).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
+    if (Array.isArray(weeklyKlines)) {
+      const closes = weeklyKlines.map(k => parseFloat(k[4]));
+      ma200w = closes.reduce((sum, p) => sum + p, 0) / closes.length;
+    }
   } catch {
     // 200周均线不影响主逻辑，失败时忽略
   }
