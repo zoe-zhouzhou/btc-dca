@@ -35,36 +35,35 @@ function computeCycleScore(feed) {
 
 function detectSignalLevel(feed) {
   const score    = computeCycleScore(feed);
-  const mvrzVal  = feed.mvrv_z?.value          ?? 999;
-  const nuplVal  = feed.nupl?.value            ?? 0;
-  const fgiVal   = feed.fgi?.value             ?? 50;
-  const puellVal = feed.puell_multiple?.value  ?? 999;
+  const mvrzVal  = feed.mvrv_ratio?.value       ?? 999;
+  const fgiVal   = feed.fgi?.value              ?? 50;
+  const puellVal = feed.puell_multiple?.value   ?? 999;
 
   const scores = [
-    feed.mvrv_z?.normalized_score            ?? 50,
+    feed.mvrv_ratio?.normalized_score         ?? 50,
     feed.puell_multiple?.normalized_score    ?? 50,
-    feed.nupl?.normalized_score              ?? 50,
+    feed.adr_act?.normalized_score           ?? 50,
     feed.exchange_reserves?.normalized_score ?? 50,
     feed.fgi?.normalized_score               ?? 50,
     feed.funding_rate?.normalized_score      ?? 50,
     feed.halving_cycle?.normalized_score     ?? 50,
-    feed.etf_flow?.normalized_score          ?? 50,
+    feed.ma_200d?.normalized_score           ?? 50,
   ];
   const looseCount  = scores.filter(s => s <= 40).length;
   const strictCount = scores.filter(s => s <= 25).length;
 
   // 极端底部 — 标准路径
-  if (score <= 17 && mvrzVal <= -0.15 && fgiVal < 7 && puellVal < 0.5) return 'extreme';
+  if (score <= 17 && mvrzVal < 0.85 && fgiVal < 7 && puellVal < 0.5) return 'extreme';
   // 极端底部 — ETF纪元备选
   if (score <= 15 && fgiVal < 7 && puellVal < 0.5) return 'extreme';
   // 准极端 — 标准路径
-  if (score <= 22 && mvrzVal < 0.4 && nuplVal < 0 && fgiVal < 12) return 'quasi';
+  if (score <= 22 && mvrzVal < 1.0 && fgiVal < 12) return 'quasi';
   // 准极端 — ETF纪元备选
   if (score <= 20 && fgiVal < 12) return 'quasi';
   // 加速信号
-  if (score <= 30 && strictCount >= 7 && mvrzVal < 0.4 && fgiVal < 15) return 'accel';
+  if (score <= 30 && strictCount >= 7 && mvrzVal < 1.2 && fgiVal < 15) return 'accel';
   // 普通信号
-  if (score <= 28 && looseCount >= 5 && mvrzVal < 0.5) return 'normal';
+  if (score <= 28 && looseCount >= 5 && mvrzVal < 1.5) return 'normal';
   return 'none';
 }
 
@@ -165,7 +164,7 @@ async function main() {
 
   const cycleScore      = computeCycleScore(feed);
   const entryThreshold  = strategyDoc.entry_threshold ?? 50;
-  const baseBulletEntry = Math.min(28, entryThreshold);
+  const baseBulletEntry = Math.min(35, entryThreshold);
 
   // ── 时间触发 ──
   const timeTrigger = isTimeTriggerDay(s, trades) && cycleScore <= entryThreshold;

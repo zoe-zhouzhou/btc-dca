@@ -167,8 +167,8 @@ risk = (fn×2 + r×2 + fs + eh) / 7
 | risk | persona | 基础/信号/极端池 | entry_threshold | 定投频率 |
 |------|---------|----------------|-----------------|---------|
 | ≥ 4.0 | calm_hunter | 15/30/55 | 50 | weekly |
-| ≥ 3.5 | determined_builder | 20/30/50 | 47 | weekly |
-| ≥ 2.5 | faithful_believer | 25/30/45 | 44 | weekly |
+| ≥ 3.5 | determined_builder | 20/30/50 | 45 | biweekly |
+| ≥ 2.5 | faithful_believer | 25/30/45 | 40 | biweekly |
 | ≥ 1.8 | cautious_observer | 35/30/35 | 40 | biweekly |
 | < 1.8 | conservative_watcher | 45/25/30 | 35 | biweekly |
 
