@@ -32,15 +32,33 @@ async function fetchSignalsFeed(url) {
   return res.json();
 }
 
+async function fetchCurrentPrice() {
+  const sources = [
+    async () => {
+      const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT', { signal: AbortSignal.timeout(6000) });
+      if (!r.ok) throw new Error(`Binance ${r.status}`);
+      return parseFloat((await r.json()).price);
+    },
+    async () => {
+      const r = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot', { signal: AbortSignal.timeout(6000) });
+      if (!r.ok) throw new Error(`Coinbase ${r.status}`);
+      return parseFloat((await r.json()).data.amount);
+    },
+    async () => {
+      const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', { signal: AbortSignal.timeout(6000) });
+      if (!r.ok) throw new Error(`CoinGecko ${r.status}`);
+      return (await r.json()).bitcoin.usd;
+    },
+  ];
+  for (const fn of sources) {
+    try { const p = await fn(); if (p > 0) return p; } catch { /* 尝试下一个 */ }
+  }
+  throw new Error('all price sources failed');
+}
+
 async function fetchBinanceData() {
-  // 当前价格
-  const priceRes = await fetch(
-    'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT',
-    { signal: AbortSignal.timeout(8000) }
-  );
-  if (!priceRes.ok) throw new Error(`Binance price HTTP ${priceRes.status}`);
-  const priceData = await priceRes.json();
-  const currentPrice = parseFloat(priceData.price);
+  // 当前价格（多源兜底）
+  const currentPrice = await fetchCurrentPrice();
 
   // 日线 K 线：7天 + 30天
   const [klines7d, klines30d] = await Promise.all([
