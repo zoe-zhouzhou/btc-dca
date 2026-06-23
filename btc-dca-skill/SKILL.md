@@ -293,12 +293,18 @@ openclaw cron add \
 
 **其他平台（Claude Code 等）：**
 
-crontab 直接调用 Node 脚本链，deliver.js 负责 Telegram 推送：
+每日早 8 点的提醒靠系统定时任务（crontab）实现——macOS 在后台自动运行一段脚本，拉取 BTC 信号并通过 Telegram 推给你。crontab 是写在你电脑上的任务表，只执行这一条命令，不访问其他文件。
+
+macOS 的安全机制要求这条命令**在系统终端（Terminal.app）里运行**，不能在 IDE 内置终端执行，否则会因权限不足失败。请打开系统 Terminal，粘贴运行：
 
 ```bash
 SKILL_DIR="$(pwd)"
 (crontab -l 2>/dev/null; echo "0 8 * * * cd $SKILL_DIR && node scripts/fetch-signals.js 2>/dev/null | node scripts/check-triggers.js 2>/dev/null | node scripts/deliver.js 2>/dev/null") | crontab -
 ```
+
+运行后用 `crontab -l` 确认添加成功。
+
+> 如果不想设置定时任务，每天手动问「今天信号怎样」效果完全一样，只是不自动推送。
 
 ---
 
