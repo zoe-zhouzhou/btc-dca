@@ -55,112 +55,207 @@ function scoreZone(score) {
 }
 
 const LEVEL_LABEL = {
-  normal: '普通信号',
-  accel:  '加速信号',
-  quasi:  '准极端信号',
+  normal:  '普通信号',
+  accel:   '加速信号',
+  quasi:   '准极端信号',
   extreme: '极端底部信号',
 };
 
+// ── 日期工具 ──────────────────────────────────────────────────────────────
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function fmtDateCN(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  return `${d.getMonth() + 1}月${d.getDate()}日（${WEEK[d.getDay()]}）`;
+}
+
+function fmtShortDate(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+/** 双周定投的当前期 */
+function biweeklyPeriod(today) {
+  const d   = new Date(today + 'T12:00:00');
+  const y   = d.getFullYear();
+  const m   = d.getMonth() + 1;
+  const day = d.getDate();
+  const pad = n => String(n).padStart(2, '0');
+
+  if (day < 15) {
+    const nm = m === 12 ? 1 : m + 1;
+    const ny = m === 12 ? y + 1 : y;
+    return {
+      label:       `${m}月1日—${m}月14日`,
+      startISO:    `${y}-${pad(m)}-01`,
+      dcaDate:     `${m}月1日`,
+      nextDcaDate: `${m}月15日`,
+    };
+  } else {
+    const lastDay = new Date(y, m, 0).getDate();
+    const nm = m === 12 ? 1 : m + 1;
+    const ny = m === 12 ? y + 1 : y;
+    return {
+      label:       `${m}月15日—${m}月${lastDay}日`,
+      startISO:    `${y}-${pad(m)}-15`,
+      dcaDate:     `${m}月15日`,
+      nextDcaDate: ny !== y ? `${ny}年${nm}月1日` : `${nm}月1日`,
+    };
+  }
+}
+
+/** 周投的当前期（从上次买入日算起 7 天） */
+function weeklyPeriod(lastBaseTrade, today) {
+  if (!lastBaseTrade) {
+    return { label: '第一周期', startISO: today, dcaDate: '今天', nextDcaDate: '今天' };
+  }
+  const start = new Date(lastBaseTrade.date + 'T12:00:00');
+  const next  = new Date(start);
+  next.setDate(next.getDate() + 7);
+  const endD = new Date(next);
+  endD.setDate(endD.getDate() - 1);
+  return {
+    label:       `${fmtShortDate(lastBaseTrade.date)}—${fmtShortDate(endD.toISOString().slice(0, 10))}`,
+    startISO:    lastBaseTrade.date,
+    dcaDate:     fmtShortDate(lastBaseTrade.date),
+    nextDcaDate: fmtShortDate(next.toISOString().slice(0, 10)),
+  };
+}
+
 // ── 消息构建 ──────────────────────────────────────────────────────────────
 
-const SEP = '─'.repeat(20);
+const SEP = '────────────────────';
+
+const SIGNAL_WHY = {
+  normal:  '链上多项指标进入低估区，条件共振触发',
+  accel:   '多指标深度低估共振，加速建仓',
+  quasi:   '接近历史极端底部，重点加仓',
+  extreme: '历史级别极端底部，集中加仓',
+};
+
+/** 冷静期结束日（today + n 天）→ "X月X日" */
+function cooldownEndDate(today, days) {
+  const d = new Date(today + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return fmtShortDate(d.toISOString().slice(0, 10));
+}
 
 function buildMessage(ctx) {
-  const { trigger, cycleScore, price, budget, poolRemaining, strategyDoc, local } = ctx;
-  const s = strategyDoc?.strategy ?? {};
+  const { trigger, cycleScore, price, budget, poolRemaining, strategyDoc, local, execLog, today } = ctx;
+  const s       = strategyDoc?.strategy ?? {};
+  const trades  = execLog?.trades ?? [];
+  const freq    = s.dca_frequency ?? 'biweekly';
+  const totalBatches = freq === 'weekly' ? 34 : 17;
+  const freqLabel    = freq === 'weekly' ? '每周' : '每两周';
 
-  const priceStr = price ? `BTC ${fmtUSD(price)}` : '';
-  const scoreStr = `周期分 ${cycleScore}/100（${scoreZone(cycleScore)}）`;
-  const marketLine = [priceStr, scoreStr].filter(Boolean).join(' · ');
+  const L = [];
+  const ln = (...args) => args.forEach(s => L.push(s));
 
   // ── 数据过期 ──
   if (trigger.trigger === 'stale') {
-    return [
-      '【BTC 定投早报】',
-      '',
+    ln(
+      `📅 BTC 定投日报 · ${fmtDateCN(today)}`,
+      SEP,
       '⚠️ 链上数据超过 48 小时未更新，信号判断暂停。',
       '时间型定投今天照常执行，信号型跳过。',
       '',
       '请检查 GitHub Actions 是否正常运行。',
-    ].join('\n');
+    );
+    return L.join('\n');
   }
 
-  // ── 无触发 ──
-  if (trigger.trigger === 'none') {
-    return [
-      '【BTC 定投早报】',
-      '',
-      '今天：观望，不操作',
-      '',
-      marketLine,
-      '条件未达触发门槛，按原计划等待。',
-    ].join('\n');
-  }
+  // ── 标题 ──
+  ln(`📅 BTC 定投日报 · ${fmtDateCN(today)}`);
 
-  // ── 时间触发（定投日）──
-  if (trigger.trigger === 'time_base') {
-    const freq         = s.dca_frequency || 'biweekly';
-    const totalBatches = freq === 'weekly' ? 34 : 17;
-    const batchesDone  = trigger.trades_count ?? 0;
-    const remaining    = Math.max(1, totalBatches - batchesDone);
-    const perBatch     = budget > 0 ? Math.round(poolRemaining.base / remaining) : 0;
-    const batchLabel   = `第 ${batchesDone + 1}/${totalBatches} 次`;
+  // ────────────────────────────────────────
+  // 分区 ① 基础定投
+  // ────────────────────────────────────────
+  const lastBase   = [...trades].reverse().find(t => t.pool === 'base');
+  const period     = freq === 'biweekly' ? biweeklyPeriod(today) : weeklyPeriod(lastBase, today);
+  const periodBuys = trades.filter(t => t.pool === 'base' && t.date >= period.startISO);
+  const batchesDone = trades.filter(t => t.pool === 'base').length;
 
-    const parts = ['【BTC 定投早报】', ''];
+  ln(SEP, `🗓️ 基础定投  ${period.label}`);
 
-    if (perBatch > 0) {
-      parts.push(`今天：买入 ${fmtCNY(perBatch)}`, '');
-      parts.push(`打开交易所，买入约 ${fmtCNY(perBatch)} 的 BTC`);
-    } else {
-      parts.push('今天：定投日', '');
-      parts.push('打开交易所，按策略金额买入 BTC');
+  if (trigger.time_trigger_active) {
+    const remaining = Math.max(1, totalBatches - batchesDone);
+    const perBatch  = budget > 0 ? Math.round(poolRemaining.base / remaining) : 0;
+    ln(`今天是本期定投日（${freqLabel}）`, '');
+    if (perBatch > 0) ln(`👉 买入约 ${fmtCNY(perBatch)}（第 ${batchesDone + 1}/${totalBatches} 批）`);
+    ln('买完回复：已买入 @成交价（例：已买入 @61000）');
+    if (perBatch > 0 && budget > 0) ln(`基础池剩余 ${fmtCNY(poolRemaining.base)}`);
+  } else if (periodBuys.length > 0) {
+    const done     = periodBuys[0];
+    const priceTag = done.price_usd ? `（@${fmtUSD(done.price_usd)}）` : '';
+    ln(`✅ 本期已完成：${fmtShortDate(done.date)} 买入 ${fmtCNY(done.amount_cny)}${priceTag}`);
+    ln(`下次定投日：${period.nextDcaDate}`);
+  } else {
+    ln(`⏳ 等待定投日：${period.dcaDate}`);
+    if (budget > 0 && totalBatches > batchesDone) {
+      const est = Math.round(poolRemaining.base / Math.max(1, totalBatches - batchesDone));
+      ln(`预计每批约 ${fmtCNY(est)}`);
     }
-    parts.push('买完回复：已买入 @成交价（例：已买入 @66200）');
-    parts.push('');
-    parts.push(SEP);
-    parts.push(marketLine);
-    parts.push(`基础仓位 ${batchLabel}，剩余额度 ${fmtCNY(poolRemaining.base)}`);
-    return parts.join('\n');
   }
 
-  // ── 信号触发 ──
-  if (trigger.trigger.startsWith('signal_')) {
-    const level     = trigger.signal_level;
-    const execPct   = trigger.exec_pct ?? 0;
-    const isExtreme = level === 'quasi' || level === 'extreme';
-    const pool      = isExtreme ? poolRemaining.extreme : poolRemaining.signal;
-    const poolLabel = isExtreme ? '加仓弹药' : '信号弹药';
-    const amount    = budget > 0 ? Math.round(pool * execPct) : 0;
+  // ────────────────────────────────────────
+  // 分区 ② 信号池
+  // ────────────────────────────────────────
+  const signalLevel  = trigger.signal_level ?? 'none';
+  const cooldownLeft = trigger.signal_cooldown_remaining ?? 0;
+  const signalActive = trigger.signal_trigger_active ?? false;
+  const isExtreme    = signalLevel === 'quasi' || signalLevel === 'extreme';
+  const signalPool   = isExtreme ? poolRemaining.extreme : poolRemaining.signal;
+  const signalPoolLabel = isExtreme ? '极端池' : '信号池';
 
-    const SIGNAL_DESC = {
-      normal:  '链上多项指标低估，触发加仓',
-      accel:   '多指标深度低估共振，加速加仓',
-      quasi:   '接近历史极端底部，重点加仓',
-      extreme: '历史级别极端底部，集中加仓',
-    };
-
-    const parts = ['【BTC 定投早报】', ''];
-
-    if (amount > 0) {
-      parts.push(`今天：${LEVEL_LABEL[level] ?? '信号触发'}，买入 ${fmtCNY(amount)}`, '');
-      parts.push(`打开交易所，买入约 ${fmtCNY(amount)} 的 BTC`);
-    } else {
-      parts.push(`今天：${LEVEL_LABEL[level] ?? '信号触发'}`, '');
-      parts.push('打开交易所，按策略金额买入 BTC');
+  if (signalActive) {
+    const execPct = trigger.exec_pct ?? 0;
+    const amount  = budget > 0 ? Math.round(signalPool * execPct) : 0;
+    ln(SEP, `⚡ 信号池  ${LEVEL_LABEL[signalLevel] ?? signalLevel}触发`);
+    ln(SIGNAL_WHY[signalLevel] ?? '', '');
+    if (amount > 0) ln(`👉 立即买入约 ${fmtCNY(amount)}`);
+    ln('买完回复：已买入 @成交价（例：已买入 @61000）');
+    if (amount > 0 && budget > 0) {
+      ln(`${signalPoolLabel}剩余 ${fmtCNY(signalPool)}，本次动用 ${(execPct * 100).toFixed(0)}%`);
     }
-    parts.push('买完回复：已买入 @成交价（例：已买入 @66200）');
-    parts.push('');
-    parts.push(SEP);
-    parts.push(marketLine);
-    parts.push(SIGNAL_DESC[level] ?? '');
-    if (amount > 0) {
-      parts.push(`${poolLabel}剩余 ${fmtCNY(pool)}，本次动用 ${(execPct * 100).toFixed(0)}%`);
-    }
-    return parts.join('\n');
+  } else if (signalLevel !== 'none' && cooldownLeft > 0) {
+    const endDate = cooldownEndDate(today, cooldownLeft);
+    ln(SEP, `⚡ 信号池  ${LEVEL_LABEL[signalLevel]}冷静期`);
+    ln(`还剩 ${cooldownLeft} 天（下次检测：${endDate}）`);
+  } else {
+    ln(SEP, '⚡ 信号池  未触发');
+    ln(`周期分 ${cycleScore}/100，信号门槛 ≤ 28 分`);
+    if (cycleScore <= 35) ln('（基础定投窗口已开启，信号等待更深共振）');
   }
 
-  // ── 错误 ──
-  return `⚠️ 状态异常：${trigger.trigger}\n${trigger.reason ?? ''}`;
+  // ────────────────────────────────────────
+  // 分区 ③ 市场
+  // ────────────────────────────────────────
+  ln(SEP, '📊 市场');
+  if (price) ln(`BTC ${fmtUSD(price)}`);
+  ln(`周期分 ${cycleScore}/100（${scoreZone(cycleScore)}）`);
+
+  if (budget > 0) {
+    const poolLine = [
+      `基础池 ${fmtCNY(poolRemaining.base)}`,
+      `信号池 ${fmtCNY(poolRemaining.signal)}`,
+      `极端池 ${fmtCNY(poolRemaining.extreme)}`,
+    ].join(' · ');
+    ln(poolLine);
+  }
+
+  // 持仓快照
+  const avgCost = execLog?.summary?.avg_cost_usd ?? 0;
+  const totalBtc = execLog?.summary?.total_btc  ?? 0;
+  if (price && avgCost > 0 && totalBtc > 0) {
+    const pnl = (price - avgCost) / avgCost;
+    ln(`持仓：${totalBtc.toFixed(6)} BTC · 均价 ${fmtUSD(avgCost)} · 账面 ${fmtPct(pnl)}`);
+  }
+
+  return L.join('\n');
 }
 
 function buildDrawdownMessage(pnlPct, local, trigger) {
@@ -260,6 +355,7 @@ async function main() {
   const message = buildMessage({
     trigger, cycleScore: trigger.cycle_score, price,
     budget, poolRemaining, strategyDoc, local,
+    execLog, today: todayStr(),
   });
 
   // ── 浮亏预警检查（如有持仓且当前价可用）──
