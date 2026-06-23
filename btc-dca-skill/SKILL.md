@@ -293,16 +293,49 @@ openclaw cron add \
 
 **其他平台（Claude Code 等）：**
 
-每日早 8 点的提醒靠系统定时任务（crontab）实现——macOS 在后台自动运行一段脚本，拉取 BTC 信号并通过 Telegram 推给你。crontab 是写在你电脑上的任务表，只执行这一条命令，不访问其他文件。
-
-macOS 的安全机制要求这条命令**在系统终端（Terminal.app）里运行**，不能在 IDE 内置终端执行，否则会因权限不足失败。请打开系统 Terminal，粘贴运行：
+每日早 8 点的提醒靠 macOS 原生的 launchd 定时任务实现，写入用户目录无需额外权限：
 
 ```bash
 SKILL_DIR="$(pwd)"
-(crontab -l 2>/dev/null; echo "0 8 * * * cd $SKILL_DIR && node scripts/fetch-signals.js 2>/dev/null | node scripts/check-triggers.js 2>/dev/null | node scripts/deliver.js 2>/dev/null") | crontab -
+mkdir -p ~/.btc-dca
+cat > ~/Library/LaunchAgents/com.btc-dca.daily-check.plist << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.btc-dca.daily-check</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>cd $SKILL_DIR && node scripts/fetch-signals.js | node scripts/check-triggers.js | node scripts/deliver.js</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>${HOME}/.btc-dca/cron.log</string>
+  <key>StandardErrorPath</key>
+  <string>${HOME}/.btc-dca/cron-error.log</string>
+</dict>
+</plist>
+EOF
+launchctl load ~/Library/LaunchAgents/com.btc-dca.daily-check.plist
+launchctl list | grep btc-dca
 ```
 
-运行后用 `crontab -l` 确认添加成功。
+成功后输出类似：
+
+```
+- 0 com.btc-dca.daily-check
+```
+
+`-` 表示当前未运行（正常），`0` 表示上次退出码为成功。日志路径：`~/.btc-dca/cron.log`（正常输出）/ `cron-error.log`（错误）。
 
 > 如果不想设置定时任务，每天手动问「今天信号怎样」效果完全一样，只是不自动推送。
 
