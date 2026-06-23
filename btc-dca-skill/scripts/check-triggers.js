@@ -169,13 +169,12 @@ async function main() {
   // ── 时间触发（基础池）：使用 base_pool_entry_score，比 entry_threshold 更严格 ──
   const timeTrigger = isTimeTriggerDay(s, trades) && cycleScore <= baseBulletEntry;
 
-  // ── 信号触发：信号条件本身已要求 ≤28，entry_threshold 作为外层门槛 ──
+  // ── 信号触发：信号条件本身已要求 ≤28-30，不需要额外的 entry_threshold 门槛 ──
   const signalLevel     = detectSignalLevel(feed);
   const cooldownLeft    = signalLevel !== 'none'
     ? signalCooldownRemaining(signalLevel, s, trades)
     : 0;
   const signalTrigger   = signalLevel !== 'none'
-    && cycleScore <= entryThreshold
     && cooldownLeft === 0;
 
   // 优先级：signal > time（信号触发时已含基础池逻辑）

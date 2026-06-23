@@ -431,7 +431,6 @@ function runBacktest(params) {
     signal_bullet_pct,
     extreme_bullet_pct,
     dca_frequency,
-    entry_threshold,
     base_pool_entry_score,
     normal_signal_cooldown_days,
     accel_signal_cooldown_days,
@@ -523,8 +522,8 @@ function runBacktest(params) {
       }
     }
 
-    // ── 信号池（严格入场门槛，需未处于冷静期）──
-    if (!inCooldown && score <= entry_threshold) {
+    // ── 信号池（需未处于冷静期；信号条件本身已含周期分门槛）──
+    if (!inCooldown) {
       if (signal === 'normal' && signalPool > 0) {
         const amt = Math.min(signalNormalAmt, signalPool);
         spent      += amt;
@@ -545,7 +544,7 @@ function runBacktest(params) {
     }
 
     // ── 极端池（准极端与极端底部共用，不受惯性缓冲限制）──
-    if (!inCooldown && score <= entry_threshold) {
+    if (!inCooldown) {
       if (signal === 'quasi' && extremePool > 0) {
         const amt = Math.min(extremeQuasiAmt, extremePool);
         spent       += amt;
