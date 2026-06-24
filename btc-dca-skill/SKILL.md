@@ -115,12 +115,18 @@ console.log('OK');
 
 > 已读取你的策略配置：
 >
-> 画像类型：[persona 键名]
+> 画像：[persona 中文名]
 > 定投频率：[weekly=每周 / biweekly=每两周]
 > 子弹分配：基础池 [base_bullet_pct]% / 信号池 [signal_bullet_pct]% / 极端池 [extreme_bullet_pct]%
 > 入场门槛：周期评分 ≤ [entry_threshold] 分
 >
 > 这是你的策略吗？
+
+persona 中文名对照（供上方摘要使用）：
+calm_hunter=冷静的猎人 / silent_whale=沉默的鲸鱼 / determined_builder=坚定的建设者 /
+curious_explorer=好奇的探索者 / precise_guardian=精算的守护者 / cautious_observer=谨慎的观察者 /
+faithful_believer=谨慎的信徒 / trend_follower=跟风的尝试者 / anxious_participant=焦虑的参与者 /
+confused_entrant=迷茫的入场者 / allin_idealist=孤注的信仰者 / conservative_watcher=保守的观望者
 
 ---
 
@@ -189,7 +195,7 @@ risk = (fn×2 + r×2 + fs + eh) / 7
 
 > 已根据你的回答生成策略配置：
 >
-> 画像类型：[persona 键名]
+> 画像：[persona 中文名]
 > 定投频率：[每周 / 每两周]
 > 子弹分配：基础池 [x]% / 信号池 [x]% / 极端池 [x]%
 > 入场门槛：周期评分 ≤ [x] 分

@@ -62,7 +62,7 @@
         OpenClaw 是 AI 原生平台，Skill 通过对话完成安装，每日信号检测结果直接推送到你的聊天频道，无需额外配置。
       </div>
       <div class="i-platform-desc" id="pdClaudeCode" style="display:none">
-        Claude Code 为本地 CLI 方案。每日检测通过系统 crontab 运行 Node 脚本，推送需配置 Telegram Bot Token。
+        Claude Code 为本地运行方案。Skill 会设置每日自动检测，需要配置 Telegram 机器人来接收推送通知（约 5 分钟，按步骤引导完成）。
       </div>
     </div>
   </section>
@@ -104,7 +104,7 @@
     <div class="i-section-num">03</div>
     <div class="i-section-title">后续使用</div>
     <div class="i-section-body">
-      <div class="i-step-desc" style="margin-bottom:8px">初始化完成后，每次打开 Claude Code / OpenClaw 输入以下命令唤起助手：</div>
+      <div class="i-step-desc" style="margin-bottom:8px">需要主动查询时，在对话框输入以下命令唤起助手：</div>
       <div class="i-msg-box" style="flex-direction:row;align-items:center;padding:11px 13px">
         <div class="i-msg-text" style="font-family:'SFMono-Regular','Consolas','Menlo',monospace;flex:1">/btc-dca-skill</div>
         <button class="i-copy-btn" style="background:#1c1c1e;color:#f0ede8;border-color:transparent" data-copy="/btc-dca-skill">复制</button>
@@ -125,8 +125,8 @@
     <div class="i-section-title">常见问题</div>
     <div class="i-section-body">
       <details class="i-faq-item">
-        <summary>导入码过期了怎么办？</summary>
-        <div class="i-faq-body">导入码有效期 7 天。过期后返回策略页，重新点击「安装 Skill」即可生成新码。问卷评分仍保存在浏览器中，无需重新填写。</div>
+        <summary>如何更新或重新生成导入码？</summary>
+        <div class="i-faq-body">导入码不会过期。如果想更新策略，重新填写问卷 → 进入策略页 → 点击「安装 Skill」即可生成新码。问卷评分保存在浏览器中，无需全部重填。</div>
       </details>
       <details class="i-faq-item">
         <summary>Skill 会收集我的资金信息吗？</summary>
@@ -152,8 +152,8 @@
 <script>
 (function () {
 
-  var OC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill）';
-  var CC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill）';
+  var OC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/skills/btc-dca-skill';
+  var CC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/.claude/skills/btc-dca-skill';
   var CODE_SUFFIX = '\n导入码：';
 
   /* ── 平台切换 ── */
