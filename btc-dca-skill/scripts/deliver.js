@@ -288,16 +288,28 @@ function buildDrawdownMessage(pnlPct, local, trigger) {
 // ── Telegram 发送 ─────────────────────────────────────────────────────────
 
 async function sendTelegram(token, chatId, text) {
-  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ chat_id: chatId, text }),
-    signal:  AbortSignal.timeout(10000),
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Telegram ${res.status}: ${body}`);
+  const TIMEOUT = 20000;
+  const RETRIES = 3;
+  let lastErr;
+  for (let i = 0; i < RETRIES; i++) {
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ chat_id: chatId, text }),
+        signal:  AbortSignal.timeout(TIMEOUT),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`Telegram ${res.status}: ${body}`);
+      }
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (i < RETRIES - 1) await new Promise(r => setTimeout(r, 3000 * (i + 1)));
+    }
   }
+  throw lastErr;
 }
 
 // ── main ─────────────────────────────────────────────────────────────────
