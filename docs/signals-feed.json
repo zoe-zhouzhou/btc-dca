@@ -1,51 +1,51 @@
 {
-  "updated_at": "2026-06-25T22:20Z",
+  "updated_at": "2026-06-26T00:02Z",
   "mvrv_ratio": {
     "value": 1.1423,
     "normalized_score": 16,
-    "updated_at": "2026-06-25"
+    "updated_at": "2026-06-26"
   },
   "puell_multiple": {
     "value": 0.7133,
     "normalized_score": 33,
-    "updated_at": "2026-06-25"
+    "updated_at": "2026-06-26"
   },
   "adr_act": {
     "ratio": 0.939,
     "normalized_score": 45,
-    "updated_at": "2026-06-25"
+    "updated_at": "2026-06-26"
   },
   "exchange_reserves": {
     "btc_amount": 2637809.16100745,
     "normalized_score": 40,
-    "updated_at": "2026-06-25"
+    "updated_at": "2026-06-26"
   },
   "fgi": {
-    "value": 12,
+    "value": 13,
     "label": "Extreme Fear",
-    "normalized_score": 12,
-    "updated_at": "2026-06-25"
+    "normalized_score": 13,
+    "updated_at": "2026-06-26"
   },
   "funding_rate": {
-    "value": -0.000003,
+    "value": 0.000002,
     "trend": "neutral",
     "stale": false,
     "normalized_score": 50,
-    "updated_at": "2026-06-25"
+    "updated_at": "2026-06-26"
   },
   "halving_cycle": {
     "months_since_halving": 26,
     "normalized_score": 29,
-    "updated_at": "2026-06-25"
+    "updated_at": "2026-06-26"
   },
   "ma_200d": {
     "multiplier": 0.808,
     "ma_value": 76314,
     "normalized_score": 16,
-    "updated_at": "2026-06-25"
+    "updated_at": "2026-06-26"
   },
   "current_price": 61658,
-  "cycle_score": 26,
+  "cycle_score": 27,
   "degraded": false,
   "degraded_reason": null
 }
