@@ -75,7 +75,7 @@
       <div class="i-step-desc" style="margin-bottom:12px">复制下面这条消息，粘贴到 OpenClaw 对话框并发送，OpenClaw 会自动完成下载、安装和初始化引导：</div>
       <div class="i-msg-box" id="iOcMsgBox">
         <div class="i-msg-text" id="iOcMsgText">帮我安装 BTC 定投 Skill 并完成初始化。
-源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/skills/btc-dca-skill</div>
+https://github.com/zoe-zhouzhou/btc-dca</div>
         <button class="i-msg-copy-btn" id="iOcMsgCopy">复制</button>
       </div>
       <div id="iOcCodeSlot"></div>
@@ -112,7 +112,7 @@
       <div class="i-step-desc" style="margin-top:16px;margin-bottom:4px">常用指令：</div>
       <div class="i-verify-output">
         <div class="i-verify-line"><span class="i-verify-key">查状态</span><span class="i-verify-val">「我现在定投进展怎样，还剩多少子弹」</span></div>
-        <div class="i-verify-line"><span class="i-verify-key">查信号</span><span class="i-verify-val">「现在适合买吗」</span></div>
+        <div class="i-verify-line"><span class="i-verify-key">查信号</span><span class="i-verify-val">「今日日报」</span></div>
         <div class="i-verify-line"><span class="i-verify-key">记录买入</span><span class="i-verify-val">「刚买了 2000 块 BTC，价格 @65000」</span></div>
         <div class="i-verify-line"><span class="i-verify-key">查策略</span><span class="i-verify-val">「查看我的策略参数」</span></div>
       </div>
@@ -152,9 +152,10 @@
 <script>
 (function () {
 
-  var OC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/skills/btc-dca-skill';
+  var OC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\nhttps://github.com/zoe-zhouzhou/btc-dca';
   var CC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/.claude/skills/btc-dca-skill';
-  var CODE_SUFFIX = '\n导入码：';
+  var CODE_SUFFIX     = '\n导入码：';
+  var STRATEGY_SUFFIX = '\n策略参数：';
 
   /* ── 平台切换 ── */
   window.switchPlatform = function (p) {
@@ -166,9 +167,15 @@
     document.getElementById('stepsClaudeCode').style.display = p === 'claudecode' ? '' : 'none';
   };
 
-  /* ── 生成消息文本（有码则追加） ── */
+  /* ── 生成消息文本（有码则追加导入码 + 解码后 JSON，让 AI 平台无需执行 bash） ── */
   function buildMsg(base, code) {
-    return code ? (base + CODE_SUFFIX + code) : base;
+    if (!code) return base;
+    var msg = base + CODE_SUFFIX + code;
+    try {
+      var decoded = decodeImportCode(code);
+      if (decoded) msg += STRATEGY_SUFFIX + JSON.stringify(decoded);
+    } catch (_) {}
+    return msg;
   }
 
   /* ── 更新消息框内容 ── */
