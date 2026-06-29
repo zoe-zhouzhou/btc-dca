@@ -315,7 +315,7 @@ cat > ~/Library/LaunchAgents/com.btc-dca.daily-check.plist << EOF
   <array>
     <string>/bin/sh</string>
     <string>-c</string>
-    <string>until curl -sf --max-time 5 https://api.telegram.org &gt;/dev/null 2&gt;&amp;1; do sleep 10; done; cd $SKILL_DIR &amp;&amp; node scripts/fetch-signals.js | node scripts/check-triggers.js | node scripts/deliver.js</string>
+    <string>i=0; while ! curl -sf --max-time 5 https://api.telegram.org &gt;/dev/null 2&gt;&amp;1; do i=$((i+1)); [ $i -ge 30 ] &amp;&amp; break; sleep 10; done; cd $SKILL_DIR &amp;&amp; node scripts/fetch-signals.js | node scripts/check-triggers.js | node scripts/deliver.js</string>
   </array>
   <key>StartCalendarInterval</key>
   <dict>
