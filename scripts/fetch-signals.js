@@ -96,12 +96,28 @@ async function fetchCoinMetrics() {
   const baseRows = baseJson?.data ?? [];
   if (!baseRows.length) throw new Error('CoinMetrics: empty response');
 
-  const latest = baseRows[baseRows.length - 1];
-  const mvrv   = parseFloat(latest.CapMVRVCur);
-  if (isNaN(mvrv)) throw new Error('CoinMetrics: invalid MVRV value');
-  const priceFromCM = parseFloat(latest.PriceUSD) || null;
-  const price7dAgo  = baseRows.length >= 8 ? parseFloat(baseRows[baseRows.length - 8]?.PriceUSD ?? '0') : null;
-  const reservesBtc = parseFloat(latest.SplyExNtv) || null;
+  // 最新行可能是当日未结算的不完整数据（CapMVRVCur 常为 null），逆向扫描找最近有效值
+  let mvrv = NaN, priceFromCM = null, price7dAgo = null, reservesBtc = null;
+  for (let i = baseRows.length - 1; i >= 0; i--) {
+    const row = baseRows[i];
+    if (isNaN(mvrv) && row.CapMVRVCur != null) {
+      const v = parseFloat(row.CapMVRVCur);
+      if (!isNaN(v) && v > 0) mvrv = v;
+    }
+    if (priceFromCM == null && row.PriceUSD != null) {
+      const v = parseFloat(row.PriceUSD);
+      if (!isNaN(v) && v > 0) priceFromCM = v;
+    }
+    if (reservesBtc == null && row.SplyExNtv != null) {
+      const v = parseFloat(row.SplyExNtv);
+      if (!isNaN(v) && v > 0) reservesBtc = v;
+    }
+    if (!isNaN(mvrv) && priceFromCM != null && reservesBtc != null) break;
+  }
+  if (isNaN(mvrv)) throw new Error('CoinMetrics: invalid MVRV value (no valid rows in last 100)');
+  // 7天前价格：从有效价格行往前数7行
+  const priceRefIdx = baseRows.findLastIndex(r => parseFloat(r.PriceUSD) > 0);
+  price7dAgo = priceRefIdx >= 7 ? parseFloat(baseRows[priceRefIdx - 7]?.PriceUSD ?? '0') || null : null;
 
   // ② Puell Multiple + 200日均线（同一请求，节省 API 调用）
   let puell = null, ma200 = null, adrActRatio = null;
