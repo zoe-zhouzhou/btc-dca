@@ -99,6 +99,7 @@ async function fetchCoinMetrics() {
   const latest = baseRows[baseRows.length - 1];
   const mvrv   = parseFloat(latest.CapMVRVCur);
   if (isNaN(mvrv)) throw new Error('CoinMetrics: invalid MVRV value');
+  const priceFromCM = parseFloat(latest.PriceUSD) || null;
   const price7dAgo  = baseRows.length >= 8 ? parseFloat(baseRows[baseRows.length - 8]?.PriceUSD ?? '0') : null;
   const reservesBtc = parseFloat(latest.SplyExNtv) || null;
 
@@ -137,7 +138,7 @@ async function fetchCoinMetrics() {
     }
   } catch { /* 忽略，保留 puell/ma200=null */ }
 
-  return { mvrv, price7dAgo, reservesBtc, puell, ma200, adrActRatio };
+  return { mvrv, priceFromCM, price7dAgo, reservesBtc, puell, ma200, adrActRatio };
 }
 
 // ── 恐慌贪婪指数 ───────────────────────────────────────────────────────────
@@ -238,14 +239,19 @@ async function main() {
   const mvrvVal  = mvrvData?.mvrv  ?? existing?.mvrv_ratio?.value      ?? 1.0;
   const fgiVal   = fgi?.value      ?? existing?.fgi?.value            ?? 50;
   const fgiLabel = fgi?.label      ?? existing?.fgi?.label            ?? 'Neutral';
-  // live fetch → 缓存值 → 0（中性兜底），stale 标记来源
+  // live fetch → 缓存值（存储为 %，读回时 ÷100 还原为 raw decimal）→ 0（中性兜底）
   const fundingRaw    = binance?.fundingRate ?? null;
-  const fundingCached = fundingRaw === null ? (existing?.funding_rate?.value ?? null) : null;
+  const fundingCached = fundingRaw === null && existing?.funding_rate?.value != null
+    ? existing.funding_rate.value / 100 : null;
   const fundingStale  = fundingRaw === null && fundingCached !== null;
   const fundingFailed = fundingRaw === null && fundingCached === null;
   const fundingVal    = fundingRaw ?? fundingCached ?? 0;
   const fundingTrend  = fundingFailed ? 'unknown' : fundingVal < -0.0001 ? 'negative' : fundingVal > 0.0001 ? 'positive' : 'neutral';
-  const priceNow = binance?.currentPrice ?? existing?.current_price ?? null;
+  const priceNow = binance?.currentPrice ?? mvrvData?.priceFromCM ?? existing?.current_price ?? null;
+  if (!binance?.currentPrice) {
+    if (mvrvData?.priceFromCM) console.warn('[fetch-signals] Binance 价格获取失败，使用 CoinMetrics PriceUSD 兜底');
+    else console.warn('[fetch-signals] 价格获取失败，使用缓存旧值');
+  }
 
   // CoinMetrics 自动计算值（失败时回退到上次已知值）
   const reservesBtc = mvrvData?.reservesBtc ?? existing?.exchange_reserves?.btc_amount ?? null;
@@ -282,7 +288,7 @@ async function main() {
     adr_act:           { ratio: adrActLive ? parseFloat(adrActVal.toFixed(3)) : null, normalized_score: ns.adr_act, updated_at: adrActLive != null ? today : (existing?.adr_act?.updated_at ?? today) },
     exchange_reserves: { btc_amount: reservesBtc,                  normalized_score: ns.exchange_reserves, updated_at: today },
     fgi:               { value: fgiVal, label: fgiLabel,           normalized_score: ns.fgi,               updated_at: today },
-    funding_rate:      { value: fundingFailed ? null : parseFloat(fundingVal.toFixed(6)), trend: fundingTrend, stale: fundingStale, normalized_score: ns.funding_rate, updated_at: today },
+    funding_rate:      { value: fundingFailed ? null : parseFloat((fundingVal * 100).toFixed(6)), trend: fundingTrend, stale: fundingStale, normalized_score: ns.funding_rate, updated_at: today },
     halving_cycle:     { months_since_halving: halving.months_since_halving, normalized_score: ns.halving_cycle, updated_at: today },
     ma_200d:           { multiplier: ma200Mult ? parseFloat(ma200Mult.toFixed(3)) : null, ma_value: ma200Val ? Math.round(ma200Val) : null, normalized_score: ns.ma_200d, updated_at: today },
     current_price: priceNow,
