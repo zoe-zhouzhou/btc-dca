@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-30T22:07Z",
+  "updated_at": "2026-06-30T23:56Z",
   "mvrv_ratio": {
     "value": 1.1323,
     "normalized_score": 15,
@@ -27,10 +27,10 @@
     "updated_at": "2026-06-30"
   },
   "funding_rate": {
-    "value": 0.007036,
+    "value": 0.004789,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 57,
+    "normalized_score": 55,
     "updated_at": "2026-06-30"
   },
   "halving_cycle": {
@@ -45,7 +45,7 @@
     "updated_at": "2026-06-30"
   },
   "current_price": 60175.460563121,
-  "cycle_score": 26,
+  "cycle_score": 25,
   "degraded": false,
   "degraded_reason": null
 }
