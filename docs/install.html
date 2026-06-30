@@ -90,7 +90,9 @@ https://github.com/zoe-zhouzhou/btc-dca</div>
       <div class="i-step-desc" style="margin-bottom:12px">复制下面这条消息，粘贴到 Claude Code 对话框并发送，Claude Code 会自动完成下载、安装和初始化引导：</div>
       <div class="i-msg-box" id="iCcMsgBox">
         <div class="i-msg-text" id="iCcMsgText">帮我安装 BTC 定投 Skill 并完成初始化。
-源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/.claude/skills/btc-dca-skill</div>
+仓库：https://github.com/zoe-zhouzhou/btc-dca
+Skill 源目录：.agents/skills/btc-dca-skill
+安装到：~/.claude/skills/btc-dca-skill</div>
         <button class="i-msg-copy-btn" id="iCcMsgCopy">复制</button>
       </div>
       <div id="iCcCodeSlot"></div>
@@ -153,9 +155,8 @@ https://github.com/zoe-zhouzhou/btc-dca</div>
 (function () {
 
   var OC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\nhttps://github.com/zoe-zhouzhou/btc-dca';
-  var CC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n源码：https://github.com/zoe-zhouzhou/btc-dca（子目录 btc-dca-skill），安装到 ~/.claude/skills/btc-dca-skill';
-  var CODE_SUFFIX     = '\n导入码：';
-  var STRATEGY_SUFFIX = '\n策略参数：';
+  var CC_BASE  = '帮我安装 BTC 定投 Skill 并完成初始化。\n仓库：https://github.com/zoe-zhouzhou/btc-dca\nSkill 源目录：.agents/skills/btc-dca-skill\n安装到：~/.claude/skills/btc-dca-skill';
+  var CODE_SUFFIX = '\n导入码：';
 
   /* ── 平台切换 ── */
   window.switchPlatform = function (p) {
@@ -167,15 +168,10 @@ https://github.com/zoe-zhouzhou/btc-dca</div>
     document.getElementById('stepsClaudeCode').style.display = p === 'claudecode' ? '' : 'none';
   };
 
-  /* ── 生成消息文本（有码则追加导入码 + 解码后 JSON，让 AI 平台无需执行 bash） ── */
+  /* ── 生成消息文本（有码则追加导入码） ── */
   function buildMsg(base, code) {
     if (!code) return base;
-    var msg = base + CODE_SUFFIX + code;
-    try {
-      var decoded = decodeImportCode(code);
-      if (decoded) msg += STRATEGY_SUFFIX + JSON.stringify(decoded);
-    } catch (_) {}
-    return msg;
+    return base + CODE_SUFFIX + code;
   }
 
   /* ── 更新消息框内容 ── */
