@@ -48,6 +48,14 @@ BTCDCA/
 │       └── utils.js                 # 公共工具函数
 ├── scripts/                         # GitHub Actions 脚本
 │   └── fetch-signals.js             # 拉取链上数据，生成 signals-feed.json
+├── .agents/
+│   └── skills/
+│       └── btc-dca-skill/           # Skill 唯一规范位置（OpenClaw auto-discover / CC 安装源）
+│           ├── SKILL.md             # Skill 定义（含 OpenClaw cron 元数据）
+│           ├── scripts/             # fetch-signals / check-triggers / deliver 等
+│           ├── config/
+│           ├── prompts/
+│           └── package.json
 └── .github/
     └── workflows/
         └── fetch-signals.yml        # 每日 8:00 触发
