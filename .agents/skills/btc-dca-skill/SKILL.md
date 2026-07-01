@@ -122,20 +122,19 @@ var code = '<CODE>';
 var b64 = code.replace(/-/g,'+').replace(/_/g,'/');
 while (b64.length % 4) b64 += '=';
 var parts = Buffer.from(b64,'base64').toString().split(',');
-if (parts.length < 12) { console.error('INVALID'); process.exit(1); }
+if (parts.length < 11) { console.error('INVALID'); process.exit(1); }
 var strategyKeys = ['base_bullet_pct','signal_bullet_pct','extreme_bullet_pct',
   'dca_frequency','base_pool_entry_score',
   'normal_signal_cooldown_days','accel_signal_cooldown_days',
   'quasi_extreme_cooldown_days','extreme_signal_cooldown_days','max_single_position_pct'];
 var strategy = {};
 strategyKeys.forEach(function(k,i){
-  var val = parts[i + 2];
+  var val = parts[i + 1];
   if (k === 'dca_frequency') { strategy[k] = val === 'w' ? 'weekly' : 'biweekly'; }
   else { strategy[k] = +val; }
 });
 var obj = {
   persona: parts[0],
-  entry_threshold: +parts[1],
   strategy: strategy
 };
 require('fs').writeFileSync(require('os').homedir()+'/.btc-dca/strategy.json', JSON.stringify(obj,null,2));
@@ -204,13 +203,13 @@ confused_entrant=迷茫的入场者 / allin_idealist=孤注的信仰者 / conser
 risk = (fn×2 + r×2 + fs + eh) / 7
 ```
 
-| risk | persona | 基础/信号/极端池 | entry_threshold | 定投频率 |
-|------|---------|----------------|-----------------|---------|
-| ≥ 4.0 | calm_hunter | 15/30/55 | 50 | weekly |
-| ≥ 3.5 | determined_builder | 20/30/50 | 45 | biweekly |
-| ≥ 2.5 | faithful_believer | 25/30/45 | 40 | biweekly |
-| ≥ 1.8 | cautious_observer | 35/30/35 | 40 | biweekly |
-| < 1.8 | conservative_watcher | 45/25/30 | 35 | biweekly |
+| risk | persona | 基础/信号/极端池 | 定投频率 |
+|------|---------|----------------|---------|
+| ≥ 4.0 | calm_hunter | 15/30/55 | weekly |
+| ≥ 3.5 | determined_builder | 20/30/50 | biweekly |
+| ≥ 2.5 | faithful_believer | 25/30/45 | biweekly |
+| ≥ 1.8 | cautious_observer | 35/30/35 | biweekly |
+| < 1.8 | conservative_watcher | 45/25/30 | biweekly |
 
 其余参数（冷静期、单次仓位上限）用标准值：
 
@@ -232,7 +231,6 @@ risk = (fn×2 + r×2 + fs + eh) / 7
 > 画像：[persona 中文名]
 > 定投频率：[每周 / 每两周]
 > 子弹分配：基础池 [x]% / 信号池 [x]% / 极端池 [x]%
-> 入场门槛：周期评分 ≤ [x] 分
 >
 > 这符合你的预期吗？（确认后继续，或告诉我需要调整哪里）
 

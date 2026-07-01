@@ -45,15 +45,6 @@ function generateStrategy(scores) {
   // ── 定投频率：仅周投 / 双周投 ──────────────────
   const dcaFrequency = risk >= 4.0 ? 'weekly' : 'biweekly';
 
-  // ── 入场周期分门槛 ────────────────────────────
-  // 全面下调：基础池仅在真正低估区启动，与"买到较低价格"原则对齐
-  // 各档与时间型停止阈值（激进60/标准55/保守50/极保守45）形成10分活跃区间
-  let entryThreshold;
-  if      (risk >= 4.0) entryThreshold = 50;
-  else if (risk >= 3.0) entryThreshold = 45;
-  else if (risk >= 2.0) entryThreshold = 40;
-  else                  entryThreshold = 35;
-
   // ── 冷静期（normal/accel 按心理韧性 r 浮动；quasi/extreme 固定短周期，底部窗口短需快速部署）──
   let normalCooldown, accelCooldown;
   if (r >= 4) {
@@ -75,14 +66,13 @@ function generateStrategy(scores) {
 
   // 基础池触发门槛：35 分（约等于 200dMA 跌破时对应的周期分水位）
   // 信号池保留严格条件（≤28 + 多指标共振），确保两池先后有序启动
-  const baseBulletEntryScore = Math.min(35, entryThreshold);
+  const baseBulletEntryScore = 35;
 
   return {
     base_bullet_pct:              basePct,
     signal_bullet_pct:            signalPct,
     extreme_bullet_pct:           extremePct,
     dca_frequency:                dcaFrequency,
-    entry_threshold:              entryThreshold,
     base_pool_entry_score:        baseBulletEntryScore,
     normal_signal_cooldown_days:  normalCooldown,
     accel_signal_cooldown_days:   accelCooldown,
@@ -215,20 +205,20 @@ function bearDurationMonths(undervaluedSince) {
 ───────────────────────────────────────── */
 
 /**
- * @param {number} cycleScore     当前周期分
- * @param {number} entryThreshold 用户画像入场门槛
- * @param {string} personaName    画像名称
- * @param {object} signal         detectSignalLevel() 结果
+ * @param {number} cycleScore  当前周期分
+ * @param {number} threshold   基础池触发门槛（base_pool_entry_score）
+ * @param {string} personaName 画像名称
+ * @param {object} signal      detectSignalLevel() 结果
  * @returns {{ verdict, reason, color, canEnter }}
  */
-function entryTimingDesc(cycleScore, entryThreshold, personaName, signal) {
-  const canEnter = cycleScore <= entryThreshold;
+function entryTimingDesc(cycleScore, threshold, personaName, signal) {
+  const canEnter = cycleScore <= threshold;
 
   if (!canEnter) {
     return {
       canEnter: false,
       verdict:  '暂不建议入场',
-      reason:   `周期评分 ${cycleScore} 分，高于基础池触发门槛 ${entryThreshold} 分。当前市场估值偏高，历史上在此区间建仓的长期胜率较低。建议保持观望，等待周期分回落至 ${entryThreshold} 分以下后再开始定投。`,
+      reason:   `周期评分 ${cycleScore} 分，高于基础池触发门槛 ${threshold} 分。当前市场估值偏高，历史上在此区间建仓的长期胜率较低。建议保持观望，等待周期分回落至 ${threshold} 分以下后再开始定投。`,
       color:    'red',
     };
   }
@@ -245,7 +235,7 @@ function entryTimingDesc(cycleScore, entryThreshold, personaName, signal) {
   return {
     canEnter: true,
     verdict:  '现在入场是合理的',
-    reason:   `周期评分 ${cycleScore} 分，已低于基础池触发门槛 ${entryThreshold} 分。链上数据显示市场处于低估区间，历史上在此区间开始定投的中长期胜率较高。建议本周期内执行第一笔基础仓位。${signalMap[signal.level] || signalMap.none}`,
+    reason:   `周期评分 ${cycleScore} 分，已低于基础池触发门槛 ${threshold} 分。链上数据显示市场处于低估区间，历史上在此区间开始定投的中长期胜率较高。建议本周期内执行第一笔基础仓位。${signalMap[signal.level] || signalMap.none}`,
     color:    'green',
   };
 }
@@ -433,7 +423,7 @@ function historicalWindowDesc(score) {
    导入码编解码（无服务器方案）
 
    格式（逗号分隔，base64url 编码）：
-   persona, entry_threshold, base_pct, signal_pct, extreme_pct,
+   persona, base_pct, signal_pct, extreme_pct,
    freq(w/b), base_pool_entry_score,
    normal_cd, accel_cd, quasi_cd, extreme_cd, max_single_pct
 ───────────────────────────────────────── */
@@ -441,7 +431,6 @@ function historicalWindowDesc(score) {
 function encodeImportCode(personaKey, strategy) {
   var csv = [
     personaKey,
-    strategy.entry_threshold,
     strategy.base_bullet_pct,
     strategy.signal_bullet_pct,
     strategy.extreme_bullet_pct,
@@ -461,21 +450,20 @@ function decodeImportCode(code) {
     var b64 = code.replace(/-/g, '+').replace(/_/g, '/');
     while (b64.length % 4) b64 += '=';
     var parts = atob(b64).split(',');
-    if (parts.length < 12) return null;
+    if (parts.length < 11) return null;
     return {
-      persona:         parts[0],
-      entry_threshold: +parts[1],
+      persona: parts[0],
       strategy: {
-        base_bullet_pct:             +parts[2],
-        signal_bullet_pct:           +parts[3],
-        extreme_bullet_pct:          +parts[4],
-        dca_frequency:               parts[5] === 'w' ? 'weekly' : 'biweekly',
-        base_pool_entry_score:       +parts[6],
-        normal_signal_cooldown_days: +parts[7],
-        accel_signal_cooldown_days:  +parts[8],
-        quasi_extreme_cooldown_days: +parts[9],
-        extreme_signal_cooldown_days:+parts[10],
-        max_single_position_pct:     +parts[11],
+        base_bullet_pct:              +parts[1],
+        signal_bullet_pct:            +parts[2],
+        extreme_bullet_pct:           +parts[3],
+        dca_frequency:                parts[4] === 'w' ? 'weekly' : 'biweekly',
+        base_pool_entry_score:        +parts[5],
+        normal_signal_cooldown_days:  +parts[6],
+        accel_signal_cooldown_days:   +parts[7],
+        quasi_extreme_cooldown_days:  +parts[8],
+        extreme_signal_cooldown_days: +parts[9],
+        max_single_position_pct:      +parts[10],
       },
     };
   } catch (e) {
