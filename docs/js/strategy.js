@@ -64,9 +64,8 @@ function generateStrategy(scores) {
   else if (r >= 3 && kn >= 3) maxSinglePct = 20;
   else                        maxSinglePct = 15;
 
-  // 基础池触发门槛：35 分（约等于 200dMA 跌破时对应的周期分水位）
-  // 信号池保留严格条件（≤28 + 多指标共振），确保两池先后有序启动
-  const baseBulletEntryScore = 35;
+  // 基础池触发门槛：与信号池对齐，28 分以下才开始基础定投
+  const baseBulletEntryScore = 28;
 
   return {
     base_bullet_pct:              basePct,
@@ -118,8 +117,10 @@ function calcAmounts(strategy, budget) {
  * @param {object}  strategy
  * @returns {number}
  */
-function calcBaseExec(amounts, strategy) {
-  const periods = strategy.dca_frequency === 'weekly' ? 34 : 17;
+function calcBaseExec(amounts, strategy, remainingMonths) {
+  var months = (typeof remainingMonths === 'number' && remainingMonths > 0) ? remainingMonths : 8;
+  var periodsPerMonth = strategy.dca_frequency === 'weekly' ? 4 : 2;
+  var periods = Math.max(1, Math.round(months * periodsPerMonth));
   return Math.round(amounts.base / periods);
 }
 
@@ -129,27 +130,20 @@ function calcBaseExec(amounts, strategy) {
  * @param {'normal'|'accel'|'quasi'|'extreme'} signalLevel
  * @returns {{ amount: number, batches: number, batchAmount: number }}
  */
-function calcSignalExec(amounts, signalLevel) {
-  switch (signalLevel) {
-    case 'normal': {
-      const a = Math.round(amounts.signal * 0.06);
-      return { amount: a, batches: 1, batchAmount: a };
-    }
-    case 'accel': {
-      const a = Math.round(amounts.signal * 0.10);
-      return { amount: a, batches: 1, batchAmount: a };
-    }
-    case 'quasi': {
-      const a = Math.round(amounts.extreme * 0.12);
-      return { amount: a, batches: 1, batchAmount: a };
-    }
-    case 'extreme': {
-      const a = Math.round(amounts.extreme * 0.20);
-      return { amount: a, batches: 1, batchAmount: a };
-    }
-    default:
-      return { amount: 0, batches: 1, batchAmount: 0 };
-  }
+function calcSignalExec(amounts, signalLevel, urgencyMultiplier) {
+  var m = (typeof urgencyMultiplier === 'number' && urgencyMultiplier > 0) ? urgencyMultiplier : 1.0;
+  var config = {
+    normal:  { base: 0.06, min: 0.03, max: 0.12, pool: amounts.signal  },
+    accel:   { base: 0.10, min: 0.05, max: 0.18, pool: amounts.signal  },
+    quasi:   { base: 0.12, min: 0.07, max: 0.22, pool: amounts.extreme },
+    extreme: { base: 0.20, min: 0.12, max: 0.35, pool: amounts.extreme },
+  };
+  var cfg = config[signalLevel];
+  if (!cfg) return { amount: 0, pct: 0, batches: 1, batchAmount: 0 };
+  var rawPct = cfg.base * m;
+  var pct    = Math.max(cfg.min, Math.min(cfg.max, rawPct));
+  var a      = Math.round(cfg.pool * pct);
+  return { amount: a, pct: Math.round(pct * 1000) / 10, batches: 1, batchAmount: a };
 }
 
 /**
@@ -469,4 +463,65 @@ function decodeImportCode(code) {
   } catch (e) {
     return null;
   }
+}
+
+/* ─────────────────────────────────────────
+   动态窗口估算
+───────────────────────────────────────── */
+
+/**
+ * 估算距离底部定投窗口关闭的剩余月数
+ * 两个维度：减半周期位置（月数越大越接近尾声）+ 周期分（越接近45越紧迫）
+ * 两维度差距 > 5 时偏向保守（较大）估算，处理 ETF 纪元异常延长场景
+ * @param {number} cycleScore         当前周期分 0-100
+ * @param {number} monthsSinceHalving 减半后已过月数
+ * @returns {number} 估算剩余月数（最小2，最大18）
+ */
+function estimateRemainingMonths(cycleScore, monthsSinceHalving) {
+  var halvingEst;
+  if      (monthsSinceHalving < 12) halvingEst = 13;
+  else if (monthsSinceHalving < 24) halvingEst = 8;
+  else if (monthsSinceHalving < 32) halvingEst = 4;
+  else                              halvingEst = 3;
+
+  // 分数越高越接近停止阈值45，剩余机会越少
+  var scoreEst;
+  if      (cycleScore < 18) scoreEst = 5;
+  else if (cycleScore < 25) scoreEst = 8;
+  else if (cycleScore < 35) scoreEst = 10;
+  else if (cycleScore < 45) scoreEst = 4;
+  else                      scoreEst = 2;
+
+  var diff = Math.abs(halvingEst - scoreEst);
+  var combined;
+  if (diff > 5) {
+    var larger  = Math.max(halvingEst, scoreEst);
+    var smaller = Math.min(halvingEst, scoreEst);
+    combined = larger * 0.7 + smaller * 0.3;
+  } else {
+    combined = (halvingEst + scoreEst) / 2;
+  }
+  return Math.round(Math.max(2, Math.min(18, combined)));
+}
+
+/**
+ * 紧迫度乘数：8个月 = 1.0×（历史平均基准），剩余越短乘数越大
+ * @param {number} remainingMonths
+ * @returns {number} 乘数 [0.5, 2.0]
+ */
+function calcUrgencyMultiplier(remainingMonths) {
+  var raw = 8 / Math.max(remainingMonths, 1);
+  return Math.round(Math.max(0.5, Math.min(2.0, raw)) * 100) / 100;
+}
+
+/**
+ * 基础池总批次数（替代硬编码的 getTimesPerYear）
+ * @param {object}      strategy
+ * @param {number|null} remainingMonths
+ * @returns {number}
+ */
+function calcBasePeriods(strategy, remainingMonths) {
+  var months = (typeof remainingMonths === 'number' && remainingMonths > 0) ? remainingMonths : 8;
+  var periodsPerMonth = strategy.dca_frequency === 'weekly' ? 4 : 2;
+  return Math.max(1, Math.round(months * periodsPerMonth));
 }

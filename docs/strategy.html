@@ -111,6 +111,14 @@
             <div class="s-history-context" id="sHistoryContext"></div>
           </div>
         </div>
+        <!-- 估算剩余窗口（仅低估区显示，随信号动态更新） -->
+        <div class="s-bear-duration-row" id="sRemainingRow" style="display:none">
+          <div class="s-history-label">估算剩余窗口</div>
+          <div class="s-history-body">
+            <div class="s-history-range" id="sRemainingRange">—</div>
+            <div class="s-history-context" id="sRemainingContext"></div>
+          </div>
+        </div>
         <!-- 低估区已持续（仅低估区且有 undervalued_since 时显示） -->
         <div class="s-bear-duration-row" id="sBearDurationRow" style="display:none">
           <div class="s-history-label">低估区已持续</div>
@@ -148,6 +156,7 @@
           </div>
           <div class="s-bullet-amount" id="bBaseAmount"><span class="unit">¥</span>—</div>
           <div class="s-bullet-exec" id="bBaseExec">—</div>
+          <div id="sBaseExecChangeNote" style="display:none;font-size:12px;color:var(--amber);margin-top:4px;line-height:1.5"></div>
         </div>
 
         <div class="s-bullet-card signal">
@@ -237,7 +246,10 @@
      预算逻辑
   ───────────────────────────────────────── */
   const BUDGET_KEY = 'btc_dca_budget';
-  var _signalData  = null;   /* 缓存信号数据，预算修改后重渲染信号区 */
+  var _signalData      = null;   /* 缓存信号数据，预算修改后重渲染信号区 */
+  var _remainingMonths = null;   /* 估算剩余定投月数，fetchSignals 后赋值 */
+  var _urgencyMult     = 1.0;    /* 紧迫度乘数，驱动信号/极端池触发比例 */
+  var BASE_EXEC_KEY    = 'btc_dca_base_exec'; /* 存上次基础池单次金额，用于变化检测 */
 
   function getBudget() {
     const v = parseFloat(localStorage.getItem(BUDGET_KEY));
@@ -247,51 +259,82 @@
   function saveBudget(v) { localStorage.setItem(BUDGET_KEY, String(v)); }
 
   function renderBulletAmounts(budget) {
-    const amounts   = calcAmounts(strategy, budget);
-    const baseExec  = calcBaseExec(amounts, strategy);
-    const freq      = dcaFreqLabel(strategy.dca_frequency);
+    var amounts   = calcAmounts(strategy, budget);
+    var baseExec  = calcBaseExec(amounts, strategy, _remainingMonths);
+    var periods   = calcBasePeriods(strategy, _remainingMonths);
+    var freq      = dcaFreqLabel(strategy.dca_frequency);
+    var rm        = _remainingMonths || 8;
 
     /* 基础池 */
-    const timesPerYear = getTimesPerYear(strategy);
     document.getElementById('bBaseAmount').innerHTML =
       '<span class="unit">¥</span>' + formatBudget(amounts.base);
     document.getElementById('bBaseExec').textContent =
       '周期分 ≤ ' + strategy.base_pool_entry_score + ' 时触发，'
-      + freq + '买入一次，每次约 ¥' + formatBudget(baseExec) + '，共 ' + getTimesPerYear(strategy) + ' 批（8 个月窗口）';
+      + freq + '买入一次，每次约 ¥' + formatBudget(baseExec)
+      + '，共约 ' + periods + ' 批（估算剩余约 ' + rm + ' 个月）';
+
+    /* 基础池金额变化检测 */
+    var prev = JSON.parse(localStorage.getItem(BASE_EXEC_KEY) || 'null');
+    var noteEl = document.getElementById('sBaseExecChangeNote');
+    if (prev && prev.amount !== baseExec) {
+      var direction = baseExec > prev.amount ? '增加' : '减少';
+      var reason = (prev.remainingMonths && prev.remainingMonths !== rm)
+        ? '估算剩余窗口从 ' + prev.remainingMonths + ' 个月变为 ' + rm + ' 个月'
+        : '周期分发生变化';
+      noteEl.textContent = reason + '，每次定投金额从 ¥' + formatBudget(prev.amount)
+        + ' ' + direction + '至 ¥' + formatBudget(baseExec) + '。';
+      noteEl.style.display = 'block';
+    } else {
+      noteEl.style.display = 'none';
+    }
+    localStorage.setItem(BASE_EXEC_KEY, JSON.stringify({ amount: baseExec, remainingMonths: rm }));
 
     /* 信号池 */
-    const normalExec = calcSignalExec(amounts, 'normal');
-    const accelExec  = calcSignalExec(amounts, 'accel');
+    var normalExec = calcSignalExec(amounts, 'normal', _urgencyMult);
+    var accelExec  = calcSignalExec(amounts, 'accel',  _urgencyMult);
     document.getElementById('bSignalAmount').innerHTML =
       '<span class="unit">¥</span>' + formatBudget(amounts.signal);
     document.getElementById('bSignalExec').textContent =
-      '普通信号触发时，一次买入约 ¥' + formatBudget(normalExec.amount) + '（信号池的 6%）；'
-      + '加速信号触发时，一次买入约 ¥' + formatBudget(accelExec.amount) + '（信号池的 10%）。'
+      '普通信号触发时，一次买入约 ¥' + formatBudget(normalExec.amount)
+      + '（信号池的 ' + normalExec.pct + '%）；'
+      + '加速信号触发时，一次买入约 ¥' + formatBudget(accelExec.amount)
+      + '（信号池的 ' + accelExec.pct + '%）。'
       + '两者共用信号池，触发后进入冷静期，到期后可再次触发。';
 
     /* 极端池 */
-    const quasiExec   = calcSignalExec(amounts, 'quasi');
-    const extremeExec = calcSignalExec(amounts, 'extreme');
+    var quasiExec   = calcSignalExec(amounts, 'quasi',   _urgencyMult);
+    var extremeExec = calcSignalExec(amounts, 'extreme',  _urgencyMult);
     document.getElementById('bExtremeAmount').innerHTML =
       '<span class="unit">¥</span>' + formatBudget(amounts.extreme);
     document.getElementById('bExtremeExec').textContent =
-      '准极端信号触发时，一次买入约 ¥' + formatBudget(quasiExec.amount) + '（极端池的 12%）；'
-      + '极端底部信号触发时，一次买入约 ¥' + formatBudget(extremeExec.amount) + '（极端池的 20%）。'
+      '准极端信号触发时，一次买入约 ¥' + formatBudget(quasiExec.amount)
+      + '（极端池的 ' + quasiExec.pct + '%）；'
+      + '极端底部信号触发时，一次买入约 ¥' + formatBudget(extremeExec.amount)
+      + '（极端池的 ' + extremeExec.pct + '%）。'
       + '两者共用极端池，7 天冷静期后若信号持续可再次触发。';
   }
 
   function renderNoBudget() {
-    const ph = '<span style="font-size:13px;color:var(--t3);font-style:italic">请先填写总预算</span>';
+    var ph = '<span style="font-size:13px;color:var(--t3);font-style:italic">请先填写总预算</span>';
     ['bBaseAmount', 'bSignalAmount', 'bExtremeAmount'].forEach(function (id) {
       document.getElementById(id).innerHTML = ph;
     });
+    var rm = _remainingMonths || 8;
     document.getElementById('bBaseExec').textContent =
       '周期分 ≤ ' + strategy.base_pool_entry_score + ' 时触发，'
-      + dcaFreqLabel(strategy.dca_frequency) + '买入一次，共 ' + getTimesPerYear(strategy) + ' 批（8 个月窗口）';
+      + dcaFreqLabel(strategy.dca_frequency) + '买入一次，共约 '
+      + calcBasePeriods(strategy, _remainingMonths) + ' 批（估算剩余约 ' + rm + ' 个月）';
+    var m = _urgencyMult || 1.0;
+    var nPct = Math.round(Math.min(0.12, Math.max(0.03, 0.06 * m)) * 1000) / 10;
+    var aPct = Math.round(Math.min(0.18, Math.max(0.05, 0.10 * m)) * 1000) / 10;
     document.getElementById('bSignalExec').textContent =
-      '普通信号触发时，一次买入信号池的 6%；加速信号触发时，一次买入信号池的 10%。两者共用信号池，触发后进入冷静期，到期后可再次触发。';
+      '普通信号触发时，一次买入信号池的 ' + nPct + '%；'
+      + '加速信号触发时，一次买入信号池的 ' + aPct + '%。两者共用信号池，触发后进入冷静期，到期后可再次触发。';
+    var qPct = Math.round(Math.min(0.22, Math.max(0.07, 0.12 * m)) * 1000) / 10;
+    var ePct = Math.round(Math.min(0.35, Math.max(0.12, 0.20 * m)) * 1000) / 10;
     document.getElementById('bExtremeExec').textContent =
-      '准极端信号触发时，单次动用极端池的 12%；极端底部信号触发时，单次动用极端池的 20%。两者共用极端池，7 天冷静期后若信号持续可再次触发。';
+      '准极端信号触发时，单次动用极端池的 ' + qPct + '%；'
+      + '极端底部信号触发时，单次动用极端池的 ' + ePct + '%。两者共用极端池，7 天冷静期后若信号持续可再次触发。';
   }
 
   function showBudgetDisplay(budget) {
@@ -356,17 +399,18 @@
   function renderSignalCard(lvl, activeKey, amounts, strategy) {
     var metCount  = lvl.conditions.filter(function (c) { return c.met; }).length;
     var isActive  = lvl.key === activeKey;
-    var exec      = amounts ? calcSignalExec(amounts, lvl.key) : null;
+    var exec      = amounts ? calcSignalExec(amounts, lvl.key, _urgencyMult) : null;
     var cdDays    = strategy[lvl.cooldownKey];
     var poolLabel = (lvl.key === 'normal' || lvl.key === 'accel') ? '信号池' : '极端池';
+    var pctStr    = exec ? exec.pct + '%' : lvl.actionPct;
 
     /* 执行金额描述（下拉框内） */
     var execText = exec
-      ? '¥' + formatBudget(exec.amount) + '（' + lvl.actionPct + '）'
+      ? '¥' + formatBudget(exec.amount) + '（' + pctStr + '）'
       : '填写预算后显示';
 
     /* badge 文字（折叠时可见） */
-    var badgeText = exec ? '约 ¥' + formatBudget(exec.amount) : lvl.actionPct;
+    var badgeText = exec ? '约 ¥' + formatBudget(exec.amount) : pctStr;
 
     var condHtml = lvl.conditions.map(function (c) {
       return '<div class="cond-item">' +
@@ -423,7 +467,8 @@
 
     /* ── 基础池 ── */
     var baseAmount  = amounts ? amounts.base    : null;
-    var baseExecAmt = amounts ? calcBaseExec(amounts, strategy) : null;
+    var baseExecAmt = amounts ? calcBaseExec(amounts, strategy, _remainingMonths) : null;
+    var basePeriods = calcBasePeriods(strategy, _remainingMonths);
     var freq        = dcaFreqLabel(strategy.dca_frequency);
 
     container.insertAdjacentHTML('beforeend',
@@ -445,7 +490,7 @@
           '<div class="s-base-rule-row">' +
             '<span class="s-base-rule-label">每次执行金额</span>' +
             '<span class="s-base-rule-value">' +
-              (baseExecAmt ? '约 ¥' + formatBudget(baseExecAmt) : '填写预算后显示') +
+              (baseExecAmt ? '约 ¥' + formatBudget(baseExecAmt) + '（共约 ' + basePeriods + ' 批）' : '填写预算后显示') +
             '</span>' +
           '</div>' +
           '<div class="s-base-rule-row">' +
@@ -513,6 +558,26 @@
     /* ── 市场状态 ── */
     var score      = computeCycleScore(data);
     var phase      = scorePhase(score);
+
+    /* ── 动态窗口估算 ── */
+    var mshv         = (data.halving_cycle && data.halving_cycle.months_since_halving) || 0;
+    _remainingMonths = estimateRemainingMonths(score, mshv);
+    _urgencyMult     = calcUrgencyMultiplier(_remainingMonths);
+
+    /* 展示估算剩余窗口（仅低估区） */
+    if (score < 55) {
+      document.getElementById('sRemainingRange').textContent = '约 ' + _remainingMonths + ' 个月';
+      document.getElementById('sRemainingContext').textContent =
+        '根据周期分（' + score + ' 分）和减半后月数（第 ' + mshv + ' 个月），'
+        + '系统估算底部定投窗口剩余约 ' + _remainingMonths + ' 个月'
+        + '（紧迫度 ' + _urgencyMult + '×）。实际以信号触发为准。';
+      document.getElementById('sRemainingRow').style.display = 'flex';
+    }
+
+    /* 若已有预算，用新的动态参数重新渲染金额 */
+    var existingBudget = getBudget();
+    if (existingBudget) renderBulletAmounts(existingBudget);
+    else renderNoBudget();
     var colorClass = score < 50 ? 'green' : score < 70 ? 'amber' : 'red';
 
     var scoreEl = document.getElementById('sCycleScore');

@@ -50,23 +50,22 @@
     <div class="i-section-title">选择运行平台</div>
     <div class="i-section-body">
       <div class="i-platform-tabs">
-        <button class="i-platform-tab active" id="tabOpenclaw" onclick="switchPlatform('openclaw')">
+        <button class="i-platform-tab active" id="tabHermes" onclick="switchPlatform('hermes')">
           <span class="i-platform-badge">推荐</span>
-          OpenClaw
-        </button>
-        <button class="i-platform-tab" id="tabHermes" onclick="switchPlatform('hermes')">
-          <span class="i-platform-badge">新</span>
           Hermes
+        </button>
+        <button class="i-platform-tab" id="tabOpenclaw" onclick="switchPlatform('openclaw')">
+          OpenClaw
         </button>
         <button class="i-platform-tab" id="tabClaudeCode" onclick="switchPlatform('claudecode')">
           Claude Code
         </button>
       </div>
-      <div class="i-platform-desc" id="pdOpenclaw">
-        OpenClaw 是 AI 原生平台，Skill 通过对话完成安装，每日信号检测结果直接推送到你的聊天频道，无需额外配置。
+      <div class="i-platform-desc" id="pdHermes">
+        Hermes 是开源 AI 原生平台（Nous Research），Skill 通过对话完成安装，每日信号检测结果推送到你连接的渠道（Telegram / Discord / Slack 等）。
       </div>
-      <div class="i-platform-desc" id="pdHermes" style="display:none">
-        Hermes 是开源 AI 原生平台（Nous Research），Skill 通过对话完成安装，每日信号检测结果推送到你已连接的任意渠道（Telegram / Discord / Slack 等），无需单独配置 Bot。
+      <div class="i-platform-desc" id="pdOpenclaw" style="display:none">
+        OpenClaw 是 AI 原生平台，Skill 通过对话完成安装，每日信号检测结果直接推送到你的聊天频道，无需额外配置。
       </div>
       <div class="i-platform-desc" id="pdClaudeCode" style="display:none">
         Claude Code 为本地运行方案。Skill 会设置每日自动检测，需要配置 Telegram 机器人来接收推送通知（约 5 分钟，按步骤引导完成）。
@@ -75,7 +74,7 @@
   </section>
 
   <!-- ② 安装步骤（OpenClaw） -->
-  <section class="i-section" id="stepsOpenclaw">
+  <section class="i-section" id="stepsOpenclaw" style="display:none">
     <div class="i-section-num">02</div>
     <div class="i-section-title">一键安装 · OpenClaw</div>
     <div class="i-section-body">
@@ -90,7 +89,7 @@ https://github.com/zoe-zhouzhou/btc-dca</div>
   </section>
 
   <!-- ② 安装步骤（Hermes） -->
-  <section class="i-section" id="stepsHermes" style="display:none">
+  <section class="i-section" id="stepsHermes">
     <div class="i-section-num">02</div>
     <div class="i-section-title">一键安装 · Hermes</div>
     <div class="i-section-body">
@@ -182,14 +181,14 @@ Skill 源目录：.agents/skills/btc-dca-skill
 
   /* ── 平台切换 ── */
   window.switchPlatform = function (p) {
-    document.getElementById('tabOpenclaw').classList.toggle('active', p === 'openclaw');
     document.getElementById('tabHermes').classList.toggle('active', p === 'hermes');
+    document.getElementById('tabOpenclaw').classList.toggle('active', p === 'openclaw');
     document.getElementById('tabClaudeCode').classList.toggle('active', p === 'claudecode');
-    document.getElementById('pdOpenclaw').style.display      = p === 'openclaw'   ? '' : 'none';
     document.getElementById('pdHermes').style.display        = p === 'hermes'     ? '' : 'none';
+    document.getElementById('pdOpenclaw').style.display      = p === 'openclaw'   ? '' : 'none';
     document.getElementById('pdClaudeCode').style.display    = p === 'claudecode' ? '' : 'none';
-    document.getElementById('stepsOpenclaw').style.display   = p === 'openclaw'   ? '' : 'none';
     document.getElementById('stepsHermes').style.display     = p === 'hermes'     ? '' : 'none';
+    document.getElementById('stepsOpenclaw').style.display   = p === 'openclaw'   ? '' : 'none';
     document.getElementById('stepsClaudeCode').style.display = p === 'claudecode' ? '' : 'none';
   };
 

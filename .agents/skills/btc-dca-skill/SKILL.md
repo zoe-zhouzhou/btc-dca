@@ -215,7 +215,7 @@ risk = (fn×2 + r×2 + fs + eh) / 7
 
 ```json
 {
-  "base_pool_entry_score": 35,
+  "base_pool_entry_score": 28,
   "normal_signal_cooldown_days": 7,
   "accel_signal_cooldown_days": 10,
   "quasi_extreme_cooldown_days": 7,
