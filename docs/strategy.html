@@ -440,7 +440,7 @@
           '</div>' +
           '<div class="s-base-rule-row">' +
             '<span class="s-base-rule-label">执行节奏</span>' +
-            '<span class="s-base-rule-value">' + freq +
+            '<span class="s-base-rule-value">' + freq + '</span>' +
           '</div>' +
           '<div class="s-base-rule-row">' +
             '<span class="s-base-rule-label">每次执行金额</span>' +
@@ -568,7 +568,12 @@
     document.getElementById('sTimingReason').textContent = timing.reason;
 
     /* ── 三池分组信号区 ── */
-    renderSignalSection(data, getBudget());
+    if (data.degraded) {
+      document.getElementById('sSignalCards').innerHTML =
+        '<p style="color:var(--t2);font-size:13px;padding:16px 0;text-align:center;">链上数据降级，信号型定投暂停，仅基础定投可正常执行。</p>';
+    } else {
+      renderSignalSection(data, getBudget());
+    }
 
     /* ── 显示 ── */
     loadingEl.style.display = 'none';

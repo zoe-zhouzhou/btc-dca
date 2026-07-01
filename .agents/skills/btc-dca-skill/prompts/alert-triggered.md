@@ -27,7 +27,7 @@
 检测到普通买入信号：
   ✓ 综合周期评分 {{cycle_score}} 分（≤ 28）
   ✓ {{loose_count}}/8 项指标归一化 ≤ 40
-  ✓ MVRV-Z {{mvrv_z_value}}（< 0.5）
+  ✓ MVRV ratio {{mvrv_ratio_value}}（< 1.5）
 
 当前价格：{{current_price}}
 建议买入：{{amount}}（信号池 × 6%，剩余 {{signal_remaining}}）
@@ -46,7 +46,7 @@
 多项深度低估指标共振：
   ✓ 周期评分 {{cycle_score}} 分（≤ 30）
   ✓ {{strict_count}}/8 项归一化分 ≤ 25（深度低估）
-  ✓ MVRV-Z {{mvrv_z_value}}（< 0.4）
+  ✓ MVRV ratio {{mvrv_ratio_value}}（< 1.2）
   ✓ 恐慌贪婪指数 {{fgi_value}}（< 15）
 
 当前价格：{{current_price}}
@@ -64,9 +64,8 @@
 
 多重底部信号共振，建议重点建仓：
   ✓ 周期评分 {{cycle_score}} 分
-  ✓ MVRV-Z {{mvrv_z_value}}（链上估值极低）
-  ✓ NUPL {{nupl_value}}（持仓整体亏损）
-  ✓ 恐慌贪婪指数 {{fgi_value}}（极度恐慌）
+  ✓ MVRV ratio {{mvrv_ratio_value}}（< 1.0）
+  ✓ 恐慌贪婪指数 {{fgi_value}}（极度恐慌，< 12）
 
 当前价格：{{current_price}}
 建议买入：{{amount}}（极端池 × 12%，剩余 {{extreme_remaining}}）
@@ -84,7 +83,7 @@
 
 历史级别底部信号，全部极端条件满足：
   ✓ 周期评分 {{cycle_score}} 分（历史极端区）
-  ✓ MVRV-Z {{mvrv_z_value}}（链上持仓深度亏损）
+  ✓ MVRV ratio {{mvrv_ratio_value}}（< 0.85）
   ✓ 恐慌贪婪指数 {{fgi_value}}/100（历史极值附近）
   ✓ Puell Multiple {{puell_value}}（矿工深度亏损期）
 

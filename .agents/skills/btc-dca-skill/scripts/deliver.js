@@ -168,6 +168,17 @@ function buildMessage(ctx) {
     return L.join('\n');
   }
 
+  // ── 降级模式 ──
+  if (trigger.trigger === 'degraded') {
+    ln(
+      `📅 BTC 定投日报 · ${fmtDateCN(today)}`,
+      SEP,
+      '⚠️ 链上数据降级模式（CoinMetrics 不可用），信号型定投已暂停。',
+      '时间型定投照常执行，信号型跳过直至数据恢复。',
+    );
+    return L.join('\n');
+  }
+
   // ── 标题 ──
   ln(`📅 BTC 定投日报 · ${fmtDateCN(today)}`);
 
@@ -211,8 +222,11 @@ function buildMessage(ctx) {
   const signalPoolLabel = isExtreme ? '极端池' : '信号池';
 
   if (signalActive) {
-    const execPct = trigger.exec_pct ?? 0;
-    const amount  = budget > 0 ? Math.round(signalPool * execPct) : 0;
+    const execPct     = trigger.exec_pct ?? 0;
+    const initialPool = isExtreme
+      ? Math.round(budget * ((s.extreme_bullet_pct ?? 45) / 100))
+      : Math.round(budget * ((s.signal_bullet_pct  ?? 30) / 100));
+    const amount      = budget > 0 ? Math.round(initialPool * execPct) : 0;
     ln(SEP, `⚡ 信号池  ${LEVEL_LABEL[signalLevel] ?? signalLevel}触发`);
     ln(SIGNAL_WHY[signalLevel] ?? '', '');
     if (amount > 0) ln(`👉 立即买入约 ${fmtCNY(amount)}`);

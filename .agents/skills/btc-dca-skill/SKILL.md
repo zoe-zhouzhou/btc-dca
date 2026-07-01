@@ -8,6 +8,10 @@ metadata:
       timezone: "Asia/Shanghai"
       session: isolated
       message: "运行 BTC 定投 Skill：读取 SKILL.md，拉取市场信号，判断是否触发定投，如有触发则推送提醒给用户"
+  hermes:
+    tags: [btc, dca, finance, automation]
+    category: finance
+    requires_toolsets: [terminal]
 ---
 
 # BTC 智能定投 Skill
@@ -20,7 +24,7 @@ metadata:
 
 **重要约定：** 你只有建议和记录能力，绝对不连接任何交易所 API，不做任何自动买卖。
 
-**平台说明：** 本 Skill 以 **OpenClaw 为 v1 主力**。OpenClaw 通过 `--session isolated` 在每日 cron 时启动一个新的隔离 session，Agent 读取本文件后自行执行检测逻辑并通过 OpenClaw 渠道推送结果，无需 Telegram。Claude Code 为 v2 备选，依赖系统 crontab + Telegram 完成每日推送。
+**平台说明：** 本 Skill 以 **OpenClaw 和 Hermes Agent 为 v1 主力**，Claude Code 为 v2 备选。OpenClaw 通过 `--session isolated` / Hermes 通过 `hermes cron create --skill btc-dca-skill` 每日在隔离 session 中读取本文件、执行检测，并通过各自 Gateway 推送结果，无需额外配置 Telegram。Claude Code 依赖 launchd + Telegram Bot 推送。
 
 ---
 
@@ -55,7 +59,13 @@ Skill 目录中的脚本（`scripts/`）：
 ### Step 0：平台检测
 
 ```bash
-which openclaw 2>/dev/null && echo 'PLATFORM=openclaw' || echo 'PLATFORM=other'
+if which openclaw 2>/dev/null; then
+  echo 'PLATFORM=openclaw'
+elif which hermes 2>/dev/null; then
+  echo 'PLATFORM=hermes'
+else
+  echo 'PLATFORM=other'
+fi
 ```
 
 将结果记录为 `platform` 字段，后续 Step 3 和 Step 4 据此分支。
@@ -270,9 +280,34 @@ risk = (fn×2 + r×2 + fs + eh) / 7
 
 获取渠道名称和 target ID 后，更新 `config.json` 的 `delivery` 字段。
 
+**如果 platform = hermes：**
+
+检查 Hermes Gateway 状态：
+
+```bash
+hermes gateway status
+```
+
+若 gateway 正常运行，询问推送目标：
+
+> 你正在使用 Hermes Agent，可以推送到你已连接的任意渠道。
+> 希望推送到哪里？（例如：`telegram` / `telegram:你的ChatID` / `discord:#频道名` / `all` 推到所有渠道）
+
+若 gateway 未配置，引导运行：
+
+```bash
+hermes gateway setup
+```
+
+按提示完成渠道配置后继续。
+
+获取目标后，更新 `config.json` 的 `delivery` 字段：`{ "method": "hermes", "target": "<用户选择的目标>" }`
+
+---
+
 **如果 platform = other（Claude Code 等）：**
 
-> 你使用的不是 OpenClaw，需要一个推送渠道才能主动提醒你。
+> 你使用的不是 OpenClaw 或 Hermes Agent，需要一个推送渠道才能主动提醒你。
 > 推荐 Telegram，免费，约 5 分钟搞定。你有 Telegram 吗？
 
 引导创建 Telegram Bot：
@@ -320,6 +355,27 @@ openclaw cron add \
 ```
 
 > ⚠️ **不要使用 `--channel last`**，必须指定明确的渠道名称和 target ID，避免多渠道配置下投递失败。
+
+**Hermes Agent（v1 主力）：**
+
+```bash
+SKILL_DIR="$(pwd)"
+hermes cron create "0 8 * * *" \
+  "运行 BTC 定投 Skill：读取 $SKILL_DIR/SKILL.md，拉取市场信号，判断是否触发定投，如有触发则推送提醒给用户" \
+  --skill btc-dca-skill \
+  --deliver <用户配置的 target> \
+  --name "BTC 定投信号检测"
+```
+
+验证：
+
+```bash
+hermes cron list
+```
+
+输出中应看到 `BTC 定投信号检测`，状态为 enabled。
+
+---
 
 **其他平台（Claude Code 等）：**
 
@@ -377,6 +433,8 @@ launchctl list | grep btc-dca
 
 **OpenClaw 模式**：直接在当前对话执行检测（见「定时检测工作流·OpenClaw 模式」），将结果展示给用户。
 
+**Hermes Agent 模式**：直接在当前对话执行检测（见「定时检测工作流·Hermes Agent 模式」），将结果展示给用户。
+
 **Claude Code 模式**：
 
 ```bash
@@ -387,14 +445,14 @@ node scripts/fetch-signals.js | node scripts/check-triggers.js | node scripts/de
 
 ```json
 {
-  "platform": "<openclaw|other>",
+  "platform": "<openclaw|hermes|other>",
   "onboardingComplete": true,
   "timezone": "Asia/Shanghai",
   "checkTime": "08:00",
   "delivery": {
-    "method": "<openclaw|telegram>",
+    "method": "<openclaw|hermes|telegram>",
     "channel": "<频道名称，仅 openclaw>",
-    "target": "<target ID，仅 openclaw>"
+    "target": "<渠道目标，openclaw 为 target ID，hermes 为 deliver 目标如 telegram/all>"
   },
   "notifications": {
     "verbosity": "normal",
@@ -425,6 +483,22 @@ node scripts/fetch-signals.js | node scripts/check-triggers.js
 - **无触发**：输出每日早报（`prompts/daily-summary.md` · 无触发模板）
 - **有触发**：输出每日早报 + 触发提醒（`prompts/daily-summary.md` · 有触发模板，触发详情接 `prompts/alert-triggered.md` 对应段落）
 - **数据过期（> 48h）**：输出每日早报（数据过期警告模板），暂停信号判断
+
+### Hermes Agent 模式（v1 主力）
+
+cron 的 isolated session 启动后读取本文件，Agent 直接执行：
+
+```bash
+node scripts/fetch-signals.js | node scripts/check-triggers.js
+```
+
+读取输出 JSON，在当前对话**直接输出推送消息**，Hermes Gateway 自动推送到配置的目标渠道：
+
+- **无触发**：输出每日早报（`prompts/daily-summary.md` · 无触发模板）
+- **有触发**：输出每日早报 + 触发提醒（`prompts/daily-summary.md` · 有触发模板，触发详情接 `prompts/alert-triggered.md` 对应段落）
+- **数据过期（> 48h）**：输出每日早报（数据过期警告模板），暂停信号判断
+
+（在响应末尾加 `[SILENT]` 可抑制该条消息的 Gateway 推送，结果仍保存在 `~/.hermes/cron/output/` 本地。）
 
 ### Claude Code 模式（v2 备选）
 

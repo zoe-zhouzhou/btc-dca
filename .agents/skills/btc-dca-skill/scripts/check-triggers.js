@@ -162,6 +162,18 @@ async function main() {
     return;
   }
 
+  // 降级模式 → 暂停信号型触发（链上数据不可用，仅 FGI/资金费率/减半周期兜底）
+  if (feed.degraded) {
+    process.stdout.write(JSON.stringify({
+      trigger:     'degraded',
+      reason:      '链上数据降级模式，信号型定投已暂停，基础定投照常执行',
+      cycle_score: computeCycleScore(feed),
+      signal_data: signalData,
+      strategy:    strategyDoc,
+    }) + '\n');
+    return;
+  }
+
   const cycleScore      = computeCycleScore(feed);
   const entryThreshold  = strategyDoc.entry_threshold ?? 50;
   const baseBulletEntry = s.base_pool_entry_score ?? Math.min(35, entryThreshold);
