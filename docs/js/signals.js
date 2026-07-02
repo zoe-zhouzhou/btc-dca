@@ -113,11 +113,12 @@ function scoreZone(score) {
  * @param {object} data
  * @returns {{ level: string, label: string, detail: string, conditions: array }}
  */
-function detectSignalLevel(data) {
+function detectSignalLevel(data, thresholds) {
   const score    = computeCycleScore(data);
   const mvrzVal  = data.mvrv_ratio?.value           ?? 999;
   const fgiVal   = data.fgi?.value              ?? 50;
   const puellVal = data.puell_multiple?.value   ?? 999;
+  const sigThreshold = (thresholds && thresholds.signal_score_threshold) || 28;
 
   // 8 项归一化分数列表
   const scores = [
@@ -191,8 +192,8 @@ function detectSignalLevel(data) {
     };
   }
 
-  // 加速信号：score≤30 + 7+ 项严格低分区 + MVRV ratio<1.2 + FGI<15
-  if (score <= 30 && strictCount >= 7 && mvrzVal < 1.2 && fgiVal < 15) {
+  // 加速信号：score≤sigThreshold + 7+ 项严格低分区 + MVRV ratio<1.2 + FGI<15
+  if (score <= sigThreshold && strictCount >= 7 && mvrzVal < 1.2 && fgiVal < 15) {
     return {
       level: 'accel', label: '加速定投信号',
       detail: `${strictCount}/8 项指标深度低估，多重底部信号共振`,
@@ -205,14 +206,14 @@ function detectSignalLevel(data) {
     };
   }
 
-  // 普通信号：score≤28 + 5+ 项宽松低分区 + MVRV ratio<1.5
+  // 普通信号：score≤sigThreshold + 5+ 项宽松低分区 + MVRV ratio<1.5
   const conditionList = [
-    { met: score <= 28,     text: `综合周期分 ${score}（≤ 28）` },
-    { met: looseCount >= 5, text: `${looseCount}/8 项指标归一化 ≤ 40，低估共振` },
-    { met: mvrzVal < 1.5,   text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.5，估值偏低）` },
+    { met: score <= sigThreshold, text: `综合周期分 ${score}（≤ ${sigThreshold}）` },
+    { met: looseCount >= 5,       text: `${looseCount}/8 项指标归一化 ≤ 40，低估共振` },
+    { met: mvrzVal < 1.5,         text: `MVRV ratio ${mvrzVal.toFixed(2)}（< 1.5，估值偏低）` },
   ];
 
-  if (score <= 28 && looseCount >= 5 && mvrzVal < 1.5) {
+  if (score <= sigThreshold && looseCount >= 5 && mvrzVal < 1.5) {
     return {
       level: 'normal', label: '普通定投信号',
       detail: '市场进入低廉估值区，维持正常定投节奏',

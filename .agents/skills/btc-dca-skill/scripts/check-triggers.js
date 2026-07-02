@@ -33,7 +33,7 @@ function computeCycleScore(feed) {
   return Math.round(fgi * 0.6 + fr * 0.2 + hc * 0.2);
 }
 
-function detectSignalLevel(feed) {
+function detectSignalLevel(feed, sigThreshold) {
   const score    = computeCycleScore(feed);
   const mvrzVal  = feed.mvrv_ratio?.value       ?? 999;
   const fgiVal   = feed.fgi?.value              ?? 50;
@@ -51,6 +51,7 @@ function detectSignalLevel(feed) {
   ];
   const looseCount  = scores.filter(s => s <= 40).length;
   const strictCount = scores.filter(s => s <= 25).length;
+  const st = sigThreshold || 28;
 
   // 极端底部 — 标准路径
   if (score <= 17 && mvrzVal < 0.85 && fgiVal < 7 && puellVal < 0.5) return 'extreme';
@@ -61,9 +62,9 @@ function detectSignalLevel(feed) {
   // 准极端 — ETF纪元备选
   if (score <= 20 && fgiVal < 12) return 'quasi';
   // 加速信号
-  if (score <= 30 && strictCount >= 7 && mvrzVal < 1.2 && fgiVal < 15) return 'accel';
+  if (score <= st && strictCount >= 7 && mvrzVal < 1.2 && fgiVal < 15) return 'accel';
   // 普通信号
-  if (score <= 28 && looseCount >= 5 && mvrzVal < 1.5) return 'normal';
+  if (score <= st && looseCount >= 5 && mvrzVal < 1.5) return 'normal';
   return 'none';
 }
 
@@ -180,8 +181,8 @@ async function main() {
   // ── 时间触发（基础池）：使用 base_pool_entry_score ──
   const timeTrigger = isTimeTriggerDay(s, trades) && cycleScore <= baseBulletEntry;
 
-  // ── 信号触发：信号条件本身已要求 ≤28-30 ──
-  const signalLevel     = detectSignalLevel(feed);
+  // ── 信号触发：使用画像专属 score 门槛 ──
+  const signalLevel     = detectSignalLevel(feed, s.signal_score_threshold);
   const cooldownLeft    = signalLevel !== 'none'
     ? signalCooldownRemaining(signalLevel, s, trades)
     : 0;
