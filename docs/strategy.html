@@ -246,10 +246,9 @@
      预算逻辑
   ───────────────────────────────────────── */
   const BUDGET_KEY = 'btc_dca_budget';
-  var _signalData      = null;   /* 缓存信号数据，预算修改后重渲染信号区 */
-  var _remainingMonths = null;   /* 估算剩余定投月数，fetchSignals 后赋值 */
-  var _urgencyMult     = 1.0;    /* 紧迫度乘数，驱动信号/极端池触发比例 */
-  var BASE_EXEC_KEY    = 'btc_dca_base_exec'; /* 存上次基础池单次金额，用于变化检测 */
+  var _signalData   = null;  /* 缓存信号数据，预算修改后重渲染信号区 */
+  var _windows      = null;  /* { below30,below28,below25,below22,below17 } 分阈值剩余月数 */
+  var BASE_EXEC_KEY = 'btc_dca_base_exec'; /* 存上次基础池单次金额，用于变化检测 */
 
   function getBudget() {
     const v = parseFloat(localStorage.getItem(BUDGET_KEY));
@@ -259,11 +258,12 @@
   function saveBudget(v) { localStorage.setItem(BUDGET_KEY, String(v)); }
 
   function renderBulletAmounts(budget) {
-    var amounts   = calcAmounts(strategy, budget);
-    var baseExec  = calcBaseExec(amounts, strategy, _remainingMonths);
-    var periods   = calcBasePeriods(strategy, _remainingMonths);
-    var freq      = dcaFreqLabel(strategy.dca_frequency);
-    var rm        = _remainingMonths || 8;
+    var amounts  = calcAmounts(strategy, budget);
+    var baseExec = calcBaseExec(amounts, strategy, _windows);
+    var periods  = calcBasePeriods(strategy, _windows);
+    var rm       = _windows ? _windows.below28 : 8;
+    var freq     = dcaFreqLabel(strategy.dca_frequency);
+    var sigT     = strategy.signal_score_threshold || 28;
 
     /* 基础池 */
     document.getElementById('bBaseAmount').innerHTML =
@@ -271,15 +271,16 @@
     document.getElementById('bBaseExec').textContent =
       '周期分 ≤ ' + strategy.base_pool_entry_score + ' 时触发，'
       + freq + '买入一次，每次约 ¥' + formatBudget(baseExec)
-      + '，共约 ' + periods + ' 批（估算剩余约 ' + rm + ' 个月）';
+      + '，共约 ' + periods + ' 批（预计约 ' + rm + ' 个月）';
 
     /* 基础池金额变化检测 */
-    var prev = JSON.parse(localStorage.getItem(BASE_EXEC_KEY) || 'null');
+    var prev   = JSON.parse(localStorage.getItem(BASE_EXEC_KEY) || 'null');
     var noteEl = document.getElementById('sBaseExecChangeNote');
     if (prev && prev.amount !== baseExec) {
       var direction = baseExec > prev.amount ? '增加' : '减少';
-      var reason = (prev.remainingMonths && prev.remainingMonths !== rm)
-        ? '估算剩余窗口从 ' + prev.remainingMonths + ' 个月变为 ' + rm + ' 个月'
+      var oldW = prev.below28 || 8;
+      var reason = (oldW !== rm)
+        ? '预计28分以下窗口从约' + oldW + '个月变为约' + rm + '个月'
         : '周期分发生变化';
       noteEl.textContent = reason + '，每次定投金额从 ¥' + formatBudget(prev.amount)
         + ' ' + direction + '至 ¥' + formatBudget(baseExec) + '。';
@@ -287,11 +288,11 @@
     } else {
       noteEl.style.display = 'none';
     }
-    localStorage.setItem(BASE_EXEC_KEY, JSON.stringify({ amount: baseExec, remainingMonths: rm }));
+    localStorage.setItem(BASE_EXEC_KEY, JSON.stringify({ amount: baseExec, below28: rm }));
 
     /* 信号池 */
-    var normalExec = calcSignalExec(amounts, 'normal', _urgencyMult);
-    var accelExec  = calcSignalExec(amounts, 'accel',  _urgencyMult);
+    var normalExec = calcSignalExec(amounts, 'normal', _windows, sigT);
+    var accelExec  = calcSignalExec(amounts, 'accel',  _windows, sigT);
     document.getElementById('bSignalAmount').innerHTML =
       '<span class="unit">¥</span>' + formatBudget(amounts.signal);
     document.getElementById('bSignalExec').textContent =
@@ -302,8 +303,8 @@
       + '两者共用信号池，触发后进入冷静期，到期后可再次触发。';
 
     /* 极端池 */
-    var quasiExec   = calcSignalExec(amounts, 'quasi',   _urgencyMult);
-    var extremeExec = calcSignalExec(amounts, 'extreme',  _urgencyMult);
+    var quasiExec   = calcSignalExec(amounts, 'quasi',   _windows, sigT);
+    var extremeExec = calcSignalExec(amounts, 'extreme', _windows, sigT);
     document.getElementById('bExtremeAmount').innerHTML =
       '<span class="unit">¥</span>' + formatBudget(amounts.extreme);
     document.getElementById('bExtremeExec').textContent =
@@ -315,23 +316,24 @@
   }
 
   function renderNoBudget() {
-    var ph = '<span style="font-size:13px;color:var(--t3);font-style:italic">请先填写总预算</span>';
+    var ph   = '<span style="font-size:13px;color:var(--t3);font-style:italic">请先填写总预算</span>';
+    var sigT = strategy.signal_score_threshold || 28;
+    var rm   = _windows ? _windows.below28 : 8;
     ['bBaseAmount', 'bSignalAmount', 'bExtremeAmount'].forEach(function (id) {
       document.getElementById(id).innerHTML = ph;
     });
-    var rm = _remainingMonths || 8;
     document.getElementById('bBaseExec').textContent =
       '周期分 ≤ ' + strategy.base_pool_entry_score + ' 时触发，'
       + dcaFreqLabel(strategy.dca_frequency) + '买入一次，共约 '
-      + calcBasePeriods(strategy, _remainingMonths) + ' 批（估算剩余约 ' + rm + ' 个月）';
-    var m = _urgencyMult || 1.0;
-    var nPct = Math.round(Math.min(0.12, Math.max(0.03, 0.06 * m)) * 1000) / 10;
-    var aPct = Math.round(Math.min(0.18, Math.max(0.05, 0.10 * m)) * 1000) / 10;
+      + calcBasePeriods(strategy, _windows) + ' 批（预计约 ' + rm + ' 个月）';
+    var fakeAmounts = { signal: 1, extreme: 1 };
+    var nPct = calcSignalExec(fakeAmounts, 'normal',  _windows, sigT).pct;
+    var aPct = calcSignalExec(fakeAmounts, 'accel',   _windows, sigT).pct;
+    var qPct = calcSignalExec(fakeAmounts, 'quasi',   _windows, sigT).pct;
+    var ePct = calcSignalExec(fakeAmounts, 'extreme', _windows, sigT).pct;
     document.getElementById('bSignalExec').textContent =
       '普通信号触发时，一次买入信号池的 ' + nPct + '%；'
       + '加速信号触发时，一次买入信号池的 ' + aPct + '%。两者共用信号池，触发后进入冷静期，到期后可再次触发。';
-    var qPct = Math.round(Math.min(0.22, Math.max(0.07, 0.12 * m)) * 1000) / 10;
-    var ePct = Math.round(Math.min(0.35, Math.max(0.12, 0.20 * m)) * 1000) / 10;
     document.getElementById('bExtremeExec').textContent =
       '准极端信号触发时，单次动用极端池的 ' + qPct + '%；'
       + '极端底部信号触发时，单次动用极端池的 ' + ePct + '%。两者共用极端池，7 天冷静期后若信号持续可再次触发。';
@@ -399,7 +401,7 @@
   function renderSignalCard(lvl, activeKey, amounts, strategy) {
     var metCount  = lvl.conditions.filter(function (c) { return c.met; }).length;
     var isActive  = lvl.key === activeKey;
-    var exec      = amounts ? calcSignalExec(amounts, lvl.key, _urgencyMult) : null;
+    var exec      = amounts ? calcSignalExec(amounts, lvl.key, _windows, strategy.signal_score_threshold) : null;
     var cdDays    = strategy[lvl.cooldownKey];
     var poolLabel = (lvl.key === 'normal' || lvl.key === 'accel') ? '信号池' : '极端池';
     var pctStr    = exec ? exec.pct + '%' : lvl.actionPct;
@@ -461,14 +463,15 @@
     var container = document.getElementById('sSignalCards');
     container.innerHTML = '';
 
-    var levels    = evaluateAllSignalLevels(data);
-    var activeKey = detectSignalLevel(data).level;
+    var thresholds = { signal_score_threshold: strategy.signal_score_threshold };
+    var levels    = evaluateAllSignalLevels(data, thresholds);
+    var activeKey = detectSignalLevel(data, thresholds).level;
     var amounts   = budget ? calcAmounts(strategy, budget) : null;
 
     /* ── 基础池 ── */
     var baseAmount  = amounts ? amounts.base    : null;
-    var baseExecAmt = amounts ? calcBaseExec(amounts, strategy, _remainingMonths) : null;
-    var basePeriods = calcBasePeriods(strategy, _remainingMonths);
+    var baseExecAmt = amounts ? calcBaseExec(amounts, strategy, _windows) : null;
+    var basePeriods = calcBasePeriods(strategy, _windows);
     var freq        = dcaFreqLabel(strategy.dca_frequency);
 
     container.insertAdjacentHTML('beforeend',
@@ -559,18 +562,29 @@
     var score      = computeCycleScore(data);
     var phase      = scorePhase(score);
 
-    /* ── 动态窗口估算 ── */
-    var mshv         = (data.halving_cycle && data.halving_cycle.months_since_halving) || 0;
-    _remainingMonths = estimateRemainingMonths(score, mshv);
-    _urgencyMult     = calcUrgencyMultiplier(_remainingMonths);
+    /* ── 动态窗口估算（以进入低估区的月数为时钟）── */
+    var undervaluedSince = data.undervalued_since || null;
+    var monthsBelowEntry = 6; // 无数据时的默认值
+    if (undervaluedSince && score <= 45) {
+      var daysDiff = (Date.now() - new Date(undervaluedSince).getTime()) / 86400000;
+      monthsBelowEntry = Math.max(1, Math.round(daysDiff / 30.44));
+    }
+    _windows = (score <= 45) ? estimateWindowsByThreshold(score, monthsBelowEntry) : null;
 
     /* 展示估算剩余窗口（仅低估区） */
-    if (score < 55) {
-      document.getElementById('sRemainingRange').textContent = '约 ' + _remainingMonths + ' 个月';
+    if (_windows && score < 55) {
+      var w   = _windows;
+      var sig = strategy.signal_score_threshold || 28;
+      var sigWinKey = 'below' + sig;
+      document.getElementById('sRemainingRange').textContent =
+        '≤' + sig + '分约' + (w[sigWinKey] || '—') + '个月'
+        + ' / ≤22分约' + (w.below22 > 0 ? w.below22 : '<1') + '个月'
+        + ' / ≤17分约' + (w.below17 > 0 ? w.below17 : '<1') + '个月';
       document.getElementById('sRemainingContext').textContent =
-        '根据周期分（' + score + ' 分）和减半后月数（第 ' + mshv + ' 个月），'
-        + '系统估算底部定投窗口剩余约 ' + _remainingMonths + ' 个月'
-        + '（紧迫度 ' + _urgencyMult + '×）。实际以信号触发为准。';
+        '根据进入低估区约' + monthsBelowEntry + '个月（' + (undervaluedSince || '—') + ' 起）、'
+        + '当前周期分' + score + '估算。'
+        + (sig !== 28 ? '≤' + sig + '分为你的画像信号触发阈值；' : '')
+        + '≤22分=准极端窗口，≤17分=极端底部窗口。';
       document.getElementById('sRemainingRow').style.display = 'flex';
     }
 
@@ -620,7 +634,7 @@
     }
 
     /* ── 入场时机 ── */
-    var signal = detectSignalLevel(data);
+    var signal = detectSignalLevel(data, { signal_score_threshold: strategy.signal_score_threshold });
     var timing = entryTimingDesc(score, strategy.base_pool_entry_score, persona.name, signal);
 
     var dotEl   = document.getElementById('sTimingDot');

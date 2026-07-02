@@ -47,5 +47,6 @@
   "current_price": 60065.5999105786,
   "cycle_score": 28,
   "degraded": false,
-  "degraded_reason": null
+  "degraded_reason": null,
+  "undervalued_since": "2026-02-10"
 }

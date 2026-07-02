@@ -297,6 +297,16 @@ async function main() {
 
   const cycleScore = computeCycleScore(ns);
 
+  // 维护 undervalued_since（score 首次跌破 45 的日期）
+  let undervaluedSince = existing?.undervalued_since || null;
+  if (typeof cycleScore === 'number') {
+    if (cycleScore <= 45) {
+      if (!undervaluedSince) undervaluedSince = today;
+    } else {
+      undervaluedSince = null;
+    }
+  }
+
   const feed = {
     updated_at:        now,
     mvrv_ratio:        { value: parseFloat(mvrvVal.toFixed(4)),   normalized_score: ns.mvrv_ratio,         updated_at: today },
@@ -307,10 +317,11 @@ async function main() {
     funding_rate:      { value: fundingFailed ? null : parseFloat((fundingVal * 100).toFixed(6)), trend: fundingTrend, stale: fundingStale, normalized_score: ns.funding_rate, updated_at: today },
     halving_cycle:     { months_since_halving: halving.months_since_halving, normalized_score: ns.halving_cycle, updated_at: today },
     ma_200d:           { multiplier: ma200Mult ? parseFloat(ma200Mult.toFixed(3)) : null, ma_value: ma200Val ? Math.round(ma200Val) : null, normalized_score: ns.ma_200d, updated_at: today },
-    current_price: priceNow,
-    cycle_score:   cycleScore,
+    current_price:     priceNow,
+    cycle_score:       cycleScore,
     degraded,
-    degraded_reason:      degradedReason,
+    degraded_reason:   degradedReason,
+    undervalued_since: undervaluedSince,
   };
 
   await writeFile(OUTPUT, JSON.stringify(feed, null, 2), 'utf8');

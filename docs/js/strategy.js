@@ -67,6 +67,13 @@ function generateStrategy(scores) {
   // 基础池触发门槛：与信号池对齐，28 分以下才开始基础定投
   const baseBulletEntryScore = 28;
 
+  // ── 信号 score 门槛（普通 + 加速共用，保守画像更晚触发）──
+  let signalScoreThreshold;
+  if      (risk >= 4.0) signalScoreThreshold = 30;
+  else if (risk >= 2.5) signalScoreThreshold = 28;
+  else if (risk >= 1.8) signalScoreThreshold = 25;
+  else                  signalScoreThreshold = 22;
+
   return {
     base_bullet_pct:              basePct,
     signal_bullet_pct:            signalPct,
@@ -78,6 +85,7 @@ function generateStrategy(scores) {
     quasi_extreme_cooldown_days:  quasiCooldown,
     extreme_signal_cooldown_days: extremeCooldown,
     max_single_position_pct:      maxSinglePct,
+    signal_score_threshold:       signalScoreThreshold,
   };
 }
 
@@ -117,11 +125,17 @@ function calcAmounts(strategy, budget) {
  * @param {object}  strategy
  * @returns {number}
  */
-function calcBaseExec(amounts, strategy, remainingMonths) {
-  var months = (typeof remainingMonths === 'number' && remainingMonths > 0) ? remainingMonths : 8;
+function calcBaseExec(amounts, strategy, windowsOrMonths) {
+  var months;
+  if (windowsOrMonths && typeof windowsOrMonths === 'object' && typeof windowsOrMonths.below28 === 'number') {
+    months = windowsOrMonths.below28;
+  } else if (typeof windowsOrMonths === 'number' && windowsOrMonths > 0) {
+    months = windowsOrMonths;
+  } else {
+    months = 8;
+  }
   var periodsPerMonth = strategy.dca_frequency === 'weekly' ? 4 : 2;
-  var periods = Math.max(1, Math.round(months * periodsPerMonth));
-  return Math.round(amounts.base / periods);
+  return Math.round(amounts.base / Math.max(1, Math.round(months * periodsPerMonth)));
 }
 
 /**
@@ -130,8 +144,23 @@ function calcBaseExec(amounts, strategy, remainingMonths) {
  * @param {'normal'|'accel'|'quasi'|'extreme'} signalLevel
  * @returns {{ amount: number, batches: number, batchAmount: number }}
  */
-function calcSignalExec(amounts, signalLevel, urgencyMultiplier) {
-  var m = (typeof urgencyMultiplier === 'number' && urgencyMultiplier > 0) ? urgencyMultiplier : 1.0;
+function calcSignalExec(amounts, signalLevel, windows, signalThreshold) {
+  // 各阈值的历史基准月数（与 estimateWindowsByThreshold 保持一致）
+  var HIST = { below30: 8, below28: 7, below25: 5, below22: 4, below17: 2 };
+  // 根据画像 signal_score_threshold 选择对应窗口 key
+  var sigKey = 'below' + (signalThreshold || 28);
+  var WMAP = { normal: sigKey, accel: sigKey, quasi: 'below22', extreme: 'below17' };
+  var m = 1.0;
+  if (windows && typeof windows === 'object') {
+    var wKey = WMAP[signalLevel];
+    var w    = windows[wKey];
+    var b    = HIST[wKey] || 7;
+    if (w === undefined || w === null) m = 1.0;
+    else if (w === 0)                  m = 2.0;
+    else m = Math.max(0.5, Math.min(2.0, b / w));
+  } else if (typeof windows === 'number') {
+    m = windows; // 向下兼容：直接传 urgencyMultiplier 数字
+  }
   var config = {
     normal:  { base: 0.06, min: 0.03, max: 0.12, pool: amounts.signal  },
     accel:   { base: 0.10, min: 0.05, max: 0.18, pool: amounts.signal  },
@@ -242,11 +271,12 @@ function entryTimingDesc(cycleScore, threshold, personaName, signal) {
  * @param {object} data signals-feed.json 解析结果
  * @returns {Array} 四级信号描述数组（与 detectSignalLevel 逻辑对齐）
  */
-function evaluateAllSignalLevels(data) {
+function evaluateAllSignalLevels(data, thresholds) {
   const score    = computeCycleScore(data);
   const mvrzVal  = data.mvrv_ratio?.value        ?? 999;
   const fgiVal   = data.fgi?.value              ?? 50;
   const puellVal = data.puell_multiple?.value   ?? 999;
+  const sigThreshold = (thresholds && thresholds.signal_score_threshold) || 28;
 
   const normScores = [
     data.mvrv_ratio?.normalized_score         ?? 50,
@@ -272,7 +302,7 @@ function evaluateAllSignalLevels(data) {
       cooldownWhy: '每次消耗 6%，配合冷静期可覆盖约 16 次触发窗口（约 4 个月），不会在底部早段就耗尽弹药。',
       note:        '3 项全部满足触发',
       conditions: [
-        { text: '周期分 ≤ 28',              value: `当前 ${score}`,                          met: score <= 28 },
+        { text: `周期分 ≤ ${sigThreshold}`,  value: `当前 ${score}`,                          met: score <= sigThreshold },
         { text: '8 指标中 5 项以上低估',    value: `当前 ${looseCount}/8 项归一化分 ≤ 40`, met: looseCount >= 5 },
         { text: 'MVRV ratio < 1.5',         value: `当前 ${mvrzVal.toFixed(2)}`,             met: mvrzVal < 1.5 },
       ],
@@ -286,7 +316,7 @@ function evaluateAllSignalLevels(data) {
       cooldownWhy: '每次消耗 10%，触发条件更严苛，市场更低估。信号池可支撑约 10 次加速触发。',
       note:        '4 项全部满足触发',
       conditions: [
-        { text: '周期分 ≤ 30',              value: `当前 ${score}`,                           met: score <= 30 },
+        { text: `周期分 ≤ ${sigThreshold}`,  value: `当前 ${score}`,                           met: score <= sigThreshold },
         { text: '8 指标中 7 项严格低估',    value: `当前 ${strictCount}/8 项归一化分 ≤ 25`, met: strictCount >= 7 },
         { text: 'MVRV ratio < 1.2',          value: `当前 ${mvrzVal.toFixed(2)}`,              met: mvrzVal < 1.2 },
         { text: 'FGI < 15',                value: `当前 ${fgiVal}`,                          met: fgiVal < 15 },
@@ -435,6 +465,7 @@ function encodeImportCode(personaKey, strategy) {
     strategy.quasi_extreme_cooldown_days,
     strategy.extreme_signal_cooldown_days,
     strategy.max_single_position_pct,
+    strategy.signal_score_threshold,
   ].join(',');
   return btoa(csv).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
@@ -458,6 +489,7 @@ function decodeImportCode(code) {
         quasi_extreme_cooldown_days:  +parts[8],
         extreme_signal_cooldown_days: +parts[9],
         max_single_position_pct:      +parts[10],
+        signal_score_threshold:       parts[11] ? +parts[11] : 28,
       },
     };
   } catch (e) {
@@ -470,38 +502,54 @@ function decodeImportCode(code) {
 ───────────────────────────────────────── */
 
 /**
- * 估算距离底部定投窗口关闭的剩余月数
- * 两个维度：减半周期位置（月数越大越接近尾声）+ 周期分（越接近45越紧迫）
- * 两维度差距 > 5 时偏向保守（较大）估算，处理 ETF 纪元异常延长场景
- * @param {number} cycleScore         当前周期分 0-100
- * @param {number} monthsSinceHalving 减半后已过月数
- * @returns {number} 估算剩余月数（最小2，最大18）
+ * 分阈值估算市场在各关键分数以下的剩余月数
+ *
+ * 时钟：score 首次跌破 45 以来的月数（monthsBelowEntry），由调用方从
+ * signals-feed.json 的 undervalued_since 字段计算得到。
+ *
+ * 两个维度：
+ *   A. 进入低估区的月数 → 估算已用进度（历史 below-45 窗口平均约 10 个月）
+ *   B. 当前分数位置 → 微调（接近退出阈值 45 = 快出来了）
+ *
+ * 历史基准（3 轮熊市平均 below-45 窗口内的时长）：
+ *   ≤30: 8月 | ≤28: 7月 | ≤25: 5月 | ≤22: 4月 | ≤17: 2月
+ *
+ * @param {number} cycleScore      当前周期分 0-100
+ * @param {number} monthsBelowEntry score ≤ 45 以来的月数
+ * @returns {{ below30, below28, below25, below22, below17 }} 各阈值估算剩余月数
  */
-function estimateRemainingMonths(cycleScore, monthsSinceHalving) {
-  var halvingEst;
-  if      (monthsSinceHalving < 12) halvingEst = 13;
-  else if (monthsSinceHalving < 24) halvingEst = 8;
-  else if (monthsSinceHalving < 32) halvingEst = 4;
-  else                              halvingEst = 3;
+function estimateWindowsByThreshold(cycleScore, monthsBelowEntry) {
+  // 维度 A：进入低估区的月数 → 已用进度
+  var pct;
+  if      (monthsBelowEntry < 2)  pct = 0.10;
+  else if (monthsBelowEntry < 4)  pct = 0.25;
+  else if (monthsBelowEntry < 6)  pct = 0.40;
+  else if (monthsBelowEntry < 8)  pct = 0.55;
+  else if (monthsBelowEntry < 10) pct = 0.70;
+  else if (monthsBelowEntry < 12) pct = 0.82;
+  else                            pct = 0.90;
 
-  // 分数越高越接近停止阈值45，剩余机会越少
-  var scoreEst;
-  if      (cycleScore < 18) scoreEst = 5;
-  else if (cycleScore < 25) scoreEst = 8;
-  else if (cycleScore < 35) scoreEst = 10;
-  else if (cycleScore < 45) scoreEst = 4;
-  else                      scoreEst = 2;
+  // 维度 B：当前分数微调（接近退出阈值 45 → 进度前移）
+  if      (cycleScore >= 38) pct = Math.min(0.90, pct + 0.10);
+  else if (cycleScore >= 32) pct = Math.min(0.87, pct + 0.05);
 
-  var diff = Math.abs(halvingEst - scoreEst);
-  var combined;
-  if (diff > 5) {
-    var larger  = Math.max(halvingEst, scoreEst);
-    var smaller = Math.min(halvingEst, scoreEst);
-    combined = larger * 0.7 + smaller * 0.3;
-  } else {
-    combined = (halvingEst + scoreEst) / 2;
-  }
-  return Math.round(Math.max(2, Math.min(18, combined)));
+  var rem = 1 - pct;
+
+  // 概率折扣：当前分数 > 阈值时，市场需进一步下跌才能进入该区间
+  var p30 = cycleScore <= 30 ? 1.00 : (cycleScore <= 40 ? 0.85 : 0.50);
+  var p28 = cycleScore <= 28 ? 1.00 : (cycleScore <= 35 ? 0.80 : 0.40);
+  var p25 = cycleScore <= 25 ? 1.00 : (cycleScore <= 28 ? 0.75 : (cycleScore <= 35 ? 0.55 : 0.25));
+  var p22 = cycleScore <= 22 ? 1.00 : (cycleScore <= 28 ? 0.70 : (cycleScore <= 35 ? 0.45 : 0.20));
+  var p17 = cycleScore <= 17 ? 1.00 : (cycleScore <= 22 ? 0.65 : (cycleScore <= 28 ? 0.45 : 0.15));
+
+  // 当前已在该区间内 → 至少保留 1 个月（防止紧迫度计算崩溃）
+  return {
+    below30: Math.max(cycleScore <= 30 ? 1 : 0, Math.round(8 * rem * p30)),
+    below28: Math.max(cycleScore <= 28 ? 1 : 0, Math.round(7 * rem * p28)),
+    below25: Math.max(cycleScore <= 25 ? 1 : 0, Math.round(5 * rem * p25)),
+    below22: Math.max(cycleScore <= 22 ? 1 : 0, Math.round(4 * rem * p22)),
+    below17: Math.max(cycleScore <= 17 ? 1 : 0, Math.round(2 * rem * p17)),
+  };
 }
 
 /**
@@ -520,8 +568,15 @@ function calcUrgencyMultiplier(remainingMonths) {
  * @param {number|null} remainingMonths
  * @returns {number}
  */
-function calcBasePeriods(strategy, remainingMonths) {
-  var months = (typeof remainingMonths === 'number' && remainingMonths > 0) ? remainingMonths : 8;
+function calcBasePeriods(strategy, windowsOrMonths) {
+  var months;
+  if (windowsOrMonths && typeof windowsOrMonths === 'object' && typeof windowsOrMonths.below28 === 'number') {
+    months = windowsOrMonths.below28;
+  } else if (typeof windowsOrMonths === 'number' && windowsOrMonths > 0) {
+    months = windowsOrMonths;
+  } else {
+    months = 8;
+  }
   var periodsPerMonth = strategy.dca_frequency === 'weekly' ? 4 : 2;
   return Math.max(1, Math.round(months * periodsPerMonth));
 }
