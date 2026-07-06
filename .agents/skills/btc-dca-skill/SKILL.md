@@ -133,6 +133,7 @@ strategyKeys.forEach(function(k,i){
   if (k === 'dca_frequency') { strategy[k] = val === 'w' ? 'weekly' : 'biweekly'; }
   else { strategy[k] = +val; }
 });
+strategy.signal_score_threshold = parts[11] ? +parts[11] : 28;
 var obj = {
   persona: parts[0],
   strategy: strategy

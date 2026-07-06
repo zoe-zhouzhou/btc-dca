@@ -357,7 +357,8 @@ function approxCycleScore(idx, data) {
  *
  * @returns {'none'|'normal'|'accel'|'quasi'|'extreme'}
  */
-function detectSignalForBacktest(idx, data) {
+function detectSignalForBacktest(idx, data, sigThreshold) {
+  sigThreshold = sigThreshold || 28;
   const d      = data[idx];
   const score  = approxCycleScore(idx, data);
   const mvrvZ  = approxMvrvZ(idx, data);
@@ -396,10 +397,10 @@ function detectSignalForBacktest(idx, data) {
   if (score <= 20 && fgiVal < 12) return 'quasi';
 
   // 加速信号：MVRV ratio<1.2（Z<-0.86）对应接近已实现市值
-  if (score <= 30 && strictCount >= strictNeed && mvrvZ < -0.86 && fgiVal < 15) return 'accel';
+  if (score <= sigThreshold && strictCount >= strictNeed && mvrvZ < -0.86 && fgiVal < 15) return 'accel';
 
   // 普通信号：MVRV ratio<1.5（Z<-0.43）对应估值偏低
-  if (score <= 28 && looseCount >= looseNeed && mvrvZ < -0.43) return 'normal';
+  if (score <= sigThreshold && looseCount >= looseNeed && mvrvZ < -0.43) return 'normal';
 
   return 'none';
 }
@@ -436,7 +437,9 @@ function runBacktest(params) {
     accel_signal_cooldown_days,
     quasi_extreme_cooldown_days,
     extreme_signal_cooldown_days,
+    signal_score_threshold,
   } = strategy;
+  const sigThreshold = signal_score_threshold || 28;
 
   // ── 三子弹资金池 ──
   const basePoolTotal    = budget * base_bullet_pct    / 100;
@@ -481,7 +484,7 @@ function runBacktest(params) {
     const pt       = data[i];
     const gIdx     = allData.findIndex(d => d.date === pt.date);
     const score    = gIdx >= 0 ? approxCycleScore(gIdx, allData)           : 50;
-    const signal   = gIdx >= 0 ? detectSignalForBacktest(gIdx, allData)    : 'none';
+    const signal   = gIdx >= 0 ? detectSignalForBacktest(gIdx, allData, sigThreshold) : 'none';
 
     const msDate   = new Date(pt.date).getTime();
     const daysSinceLast = lastSignalDate
