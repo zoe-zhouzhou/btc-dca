@@ -733,14 +733,22 @@ jobs:
 
 ### 10.1 SKILL.md 格式要求
 
-参考 follow-builders/SKILL.md 的格式，SKILL.md 必须包含以下部分：
+参考 follow-builders/SKILL.md 的格式，但为降低每日 cron 任务的 token 消耗，Onboarding 拆
+分为独立文件，采用渐进式加载（progressive disclosure）：
 
-- frontmatter：name、description、metadata（openclaw 配置）
-- 平台检测逻辑（OpenClaw vs 其他）
-- 首次运行 Onboarding 流程（Step 0 到 Step 5）
-- 信号检测工作流（定时运行）
-- 用户交互处理（记录、查询、调整策略）
-- 配置管理（查看、修改各项设置）
+- `SKILL.md`（主文件，日常检测和交互都会加载，需保持精简）：
+  - frontmatter：name、description、metadata（openclaw 配置）
+  - 平台检测逻辑（OpenClaw vs 其他）
+  - 首次安装判断（仅一段路由：未完成时读取 `onboarding.md` 并执行，完成则跳过）
+  - 信号检测工作流（定时运行）
+  - 用户交互处理（记录、查询、调整策略）
+  - 配置管理（查看、修改各项设置）
+- `onboarding.md`（独立文件，仅首次安装 / 用户主动要求重新引导时读取）：
+  - 完整 Step 0 到 Step 5 流程（平台检测、策略配置、本地信息、推送渠道、定时任务、Welcome Run）
+
+**原则：** `SKILL.md` 只放每次触发都可能用到的内容；只在特定场景（如首次安装）才需要的
+长流程一律拆到独立文件，由 `SKILL.md` 按条件显式指向，避免日常 cron / 查询场景被迫加载
+用不到的内容。
 
 ### 10.2 脚本技术要求
 

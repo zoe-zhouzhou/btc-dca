@@ -378,6 +378,24 @@ BTCDCA/
 
 ---
 
+### Session 9.x SKILL.md 拆分降低早报 token 消耗（2026-07-07）
+
+**问题背景：** 用户反馈每次早报（每日 cron 定时检测）任务感觉消耗 token 过多。诊断发现
+`btc-dca-skill/SKILL.md` 原有 636 行，其中「首次安装（Onboarding）」一节（Step 0–5，约
+410 行，占全文 65%）是只有首次安装 / 重新引导时才用得上的对话式流程，但每次 OpenClaw /
+Hermes 的 isolated cron session 附加该 skill 时都会把整份 SKILL.md 加载进上下文，导致日常
+早报任务被迫带着完全用不到的 onboarding 内容。
+
+**修复方案：** 采用渐进式加载（progressive disclosure），把 Onboarding 拆到独立文件：
+- 新增 `.agents/skills/btc-dca-skill/onboarding.md`：完整 Step 0–5 流程原样迁入
+- `SKILL.md` 「首次安装」一节改为一段精简路由判断（约6行）：未完成安装时读取
+  `onboarding.md` 并执行，已完成则跳过，直接进入定时检测工作流等日常章节
+- `SKILL.md` 从 636 行降到 236 行，日常 cron / 查询场景不再加载 onboarding 内容
+
+**修改文件：** `.agents/skills/btc-dca-skill/SKILL.md`、`.agents/skills/btc-dca-skill/onboarding.md`（新增）、`BTC定投Skill产品文档.md`（10.1 节同步更新拆分规范）
+
+---
+
 ### Session 5 遗留事项
 
 - `backtest.js` 中 MVRV 用价格百分位近似，与真实 MVRV 有偏差；历史 FGI 2018 年前为 null，用 50 填充
