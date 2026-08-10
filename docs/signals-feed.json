@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-10T00:50Z",
+  "updated_at": "2026-08-10T03:04Z",
   "mvrv_ratio": {
-    "value": 1.2308,
+    "value": 1.2301,
     "normalized_score": 19,
     "updated_at": "2026-08-10"
   },
@@ -16,7 +16,7 @@
     "updated_at": "2026-08-10"
   },
   "exchange_reserves": {
-    "btc_amount": 2665762.65381275,
+    "btc_amount": 2667827.38391004,
     "normalized_score": 38,
     "updated_at": "2026-08-10"
   },
@@ -27,7 +27,7 @@
     "updated_at": "2026-08-10"
   },
   "funding_rate": {
-    "value": 0.009057,
+    "value": 0.008982,
     "trend": "neutral",
     "stale": false,
     "normalized_score": 59,
