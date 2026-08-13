@@ -55,38 +55,37 @@
         <span class="score-update sk" id="scoreUpdate" style="min-width:56px">—</span>
       </div>
 
-      <div class="score-display">
-        <div class="score-number sk" id="scoreNumber" style="min-width:48px">--</div>
-        <div class="score-zone-badge sk" id="scoreZoneBadge" style="min-width:60px">—</div>
-      </div>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 300 172" aria-hidden="true">
+          <!-- 4 段弧线，边界 0/25/45/70/100，半径120，圆心(150,160) -->
+          <path d="M30,160 A120,120 0 0 1 65.15,75.15"       class="gauge-arc gauge-arc-bottom"/>
+          <path d="M65.15,75.15 A120,120 0 0 1 131.23,41.48" class="gauge-arc gauge-arc-bear"/>
+          <path d="M131.23,41.48 A120,120 0 0 1 220.53,62.92" class="gauge-arc gauge-arc-neutral"/>
+          <path d="M220.53,62.92 A120,120 0 0 1 270,160"     class="gauge-arc gauge-arc-high"/>
 
-      <div class="score-bar-wrap">
-        <div class="score-bar-track">
-          <div class="score-bar-fill" id="scoreBarFill" style="width:0%"></div>
-        </div>
-        <div class="score-bar-axis">
-          <span>0 底部区</span>
-          <span>50 中性</span>
-          <span>100 顶部区</span>
-        </div>
-      </div>
+          <!-- 刻度：0 / 25 / 45 / 70 / 100，半径138 -->
+          <text x="12"  y="164" class="gauge-tick">0</text>
+          <text x="52.4" y="66" class="gauge-tick">25</text>
+          <text x="128.4" y="28" class="gauge-tick" text-anchor="middle">45</text>
+          <text x="231.1" y="52" class="gauge-tick" text-anchor="middle">70</text>
+          <text x="288" y="164" class="gauge-tick" text-anchor="end">100</text>
 
-      <div class="zone-pills">
-        <div class="zone-pill zone-bottom" id="zone0">
-          <div class="zone-range">0–25</div>
-          <div class="zone-name">极端底部</div>
-        </div>
-        <div class="zone-pill zone-bear" id="zone1">
-          <div class="zone-range">25–45</div>
-          <div class="zone-name">熊市积累</div>
-        </div>
-        <div class="zone-pill zone-neutral" id="zone2">
-          <div class="zone-range">45–70</div>
-          <div class="zone-name">震荡中性</div>
-        </div>
-        <div class="zone-pill zone-high" id="zone3">
-          <div class="zone-range">70–100</div>
-          <div class="zone-name">高估预警</div>
+          <!-- 区间名，半径78，居中于各弧段中点 -->
+          <text x="77.9"  y="130" text-anchor="middle" class="gauge-zlabel gauge-zlabel-bottom"  id="gLabel0">极端底部</text>
+          <text x="114.6" y="90"  text-anchor="middle" class="gauge-zlabel gauge-zlabel-bear"     id="gLabel1">熊市积累</text>
+          <text x="168.2" y="84"  text-anchor="middle" class="gauge-zlabel gauge-zlabel-neutral"  id="gLabel2">震荡中性</text>
+          <text x="219.5" y="125" text-anchor="middle" class="gauge-zlabel gauge-zlabel-high"     id="gLabel3">高估预警</text>
+
+          <!-- 指针：初始垂直向上（对应score=50），JS按角度旋转 -->
+          <g id="gaugeNeedle" class="gauge-needle">
+            <line x1="150" y1="160" x2="150" y2="50" />
+          </g>
+          <circle cx="150" cy="160" r="7" class="gauge-hub"/>
+        </svg>
+
+        <div class="gauge-center">
+          <div class="score-number sk" id="scoreNumber" style="min-width:48px">--</div>
+          <div class="score-zone-badge sk" id="scoreZoneBadge" style="min-width:60px">—</div>
         </div>
       </div>
     </div>
@@ -315,7 +314,7 @@
 <script>
 /* ─── Helpers ─── */
 function barColor(score) {
-  if (score < 25) return '#0b9e8c';
+  if (score < 25) return '#0c7c99';
   if (score < 45) return 'var(--green-bar)';
   if (score < 70) return 'var(--amber-bar)';
   return 'var(--red-bar)';
@@ -336,6 +335,7 @@ function phaseHeadline(score) {
 }
 
 function scoreColorClass(score) {
+  if (score < 25) return 'teal';
   if (score < 45) return 'green';
   if (score < 70) return 'amber';
   return 'red';
@@ -425,15 +425,14 @@ function renderDashboard(d) {
   zBadge.textContent = z.zone;
   zBadge.className   = 'score-zone-badge zone-badge-' + z.cls;
 
-  /* Bar */
-  const bar = document.getElementById('scoreBarFill');
-  bar.style.background = barColor(score);
-  requestAnimationFrame(() => { bar.style.width = score + '%'; });
+  /* Needle rotation */
+  const deg = -90 + (score / 100) * 180;
+  document.getElementById('gaugeNeedle').style.transform = `rotate(${deg}deg)`;
 
-  /* Zone pills */
+  /* Active zone label emphasis */
   const az = activeZone(score);
-  ['zone0','zone1','zone2','zone3'].forEach((id, i) =>
-    document.getElementById(id).classList.toggle('zone-inactive', i !== az));
+  ['gLabel0','gLabel1','gLabel2','gLabel3'].forEach((id, i) =>
+    document.getElementById(id).classList.toggle('gauge-zlabel-active', i === az));
 
   /* Phase */
   const descEl = document.getElementById('phaseDesc');

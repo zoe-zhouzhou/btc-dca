@@ -298,6 +298,7 @@ body {
   margin-bottom: 6px;
 }
 
+.ind-card-status.teal  { color: #0a6379; }
 .ind-card-status.green { color: var(--green); }
 .ind-card-status.amber { color: var(--amber); }
 .ind-card-status.red   { color: var(--red); }
@@ -741,15 +742,71 @@ details.sources summary::-webkit-details-marker { display: none; }
   font-variant-numeric: tabular-nums;
 }
 
-/* Score number + zone badge row */
-.score-display {
+/* Gauge */
+.gauge-wrap {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 4px 0 14px;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
 }
 
+.gauge-svg {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.gauge-arc {
+  fill: none;
+  stroke-width: 15;
+  stroke-linecap: butt;
+}
+.gauge-arc-bottom  { stroke: #0c7c99; }
+.gauge-arc-bear    { stroke: var(--green-bar); }
+.gauge-arc-neutral { stroke: var(--amber-bar); }
+.gauge-arc-high    { stroke: var(--red-bar); }
+
+.gauge-tick {
+  font-size: 9.5px;
+  fill: var(--t3);
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge-zlabel {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.55;
+  transition: opacity var(--dur-med);
+}
+.gauge-zlabel.gauge-zlabel-active { opacity: 1; font-weight: 700; }
+
+.gauge-zlabel-bottom  { fill: #0a6379; }
+.gauge-zlabel-bear    { fill: var(--green); }
+.gauge-zlabel-neutral { fill: var(--amber); }
+.gauge-zlabel-high    { fill: var(--red); }
+
+.gauge-needle {
+  transform-origin: 150px 160px;
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.gauge-needle line {
+  stroke: #1c1c1e;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.gauge-hub { fill: #1c1c1e; }
+
+.gauge-center {
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* Score number + zone badge, centered under gauge */
 .score-number {
+  display: block;
   font-size: 52px;
   font-weight: 700;
   letter-spacing: -2px;
@@ -758,110 +815,20 @@ details.sources summary::-webkit-details-marker { display: none; }
   font-variant-numeric: tabular-nums;
 }
 
-/* Inline zone badge next to number */
 .score-zone-badge {
+  display: inline-block;
+  margin-top: 6px;
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--radius-xs);
   white-space: nowrap;
-  align-self: center;
 }
 
-.zone-badge-bottom  { background: rgba(11,158,140,.1);  color: #0b7a6e; }
+.zone-badge-bottom  { background: rgba(12,124,153,.12);  color: #0a6379; }
 .zone-badge-bear    { background: rgba(30,125,80,.1);    color: var(--green); }
 .zone-badge-neutral { background: rgba(168,113,8,.1);   color: var(--amber); }
 .zone-badge-high    { background: rgba(196,48,48,.1);    color: var(--red); }
-
-/* Progress Bar */
-.score-bar-wrap {
-  margin-bottom: 14px;
-}
-
-.score-bar-track {
-  height: 6px;
-  background: var(--bar-track);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 5px;
-}
-
-.score-bar-fill {
-  height: 100%;
-  border-radius: 3px;
-  background: var(--green-bar);
-  width: 0%;
-  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.score-bar-axis {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10.5px;
-  color: var(--t3);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Zone Pills */
-.zone-pills {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-}
-
-.zone-pill {
-  border-radius: var(--radius-sm);
-  padding: 8px 5px;
-  text-align: center;
-  border: 1.5px solid transparent;
-  transition: opacity var(--dur-med);
-}
-
-.zone-pill.zone-inactive { opacity: 0.38; }
-
-.zone-range {
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 3px;
-  letter-spacing: -0.2px;
-  font-variant-numeric: tabular-nums;
-}
-
-.zone-name {
-  font-size: 9.5px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-/* Zone color variants */
-.zone-bottom {
-  background: rgba(11,158,140,.07);
-  border-color: rgba(11,158,140,.22);
-}
-.zone-bottom .zone-range,
-.zone-bottom .zone-name { color: #0b7a6e; }
-
-.zone-bear {
-  background: rgba(30,125,80,.08);
-  border-color: rgba(30,125,80,.22);
-}
-.zone-bear .zone-range,
-.zone-bear .zone-name { color: var(--green); }
-
-.zone-neutral {
-  background: rgba(168,113,8,.07);
-  border-color: rgba(168,113,8,.2);
-}
-.zone-neutral .zone-range,
-.zone-neutral .zone-name { color: var(--amber); }
-
-.zone-high {
-  background: rgba(196,48,48,.07);
-  border-color: rgba(196,48,48,.2);
-}
-.zone-high .zone-range,
-.zone-high .zone-name { color: var(--red); }
 
 /* Phase description */
 .phase-desc {
@@ -943,6 +910,7 @@ details.sources summary::-webkit-details-marker { display: none; }
   text-align: right;
   flex-shrink: 0;
 }
+.ind-chip-score.teal  { color: #0a6379; }
 .ind-chip-score.green { color: var(--green); }
 .ind-chip-score.amber { color: var(--amber); }
 .ind-chip-score.red   { color: var(--red); }
@@ -959,6 +927,7 @@ details.sources summary::-webkit-details-marker { display: none; }
   min-width: 42px;
 }
 
+.ind-badge.teal  { background: rgba(12,124,153,.1); color: #0a6379; }
 .ind-badge.green { background: rgba(30,125,80,.1);  color: var(--green); }
 .ind-badge.amber { background: rgba(168,113,8,.1);  color: var(--amber); }
 .ind-badge.red   { background: rgba(196,48,48,.1);  color: var(--red); }
@@ -1567,6 +1536,7 @@ details.sources summary::-webkit-details-marker { display: none; }
 }
 
 /* ── ind-card-status color overrides inside market-module (specificity 0,3,0) ── */
+.market-module .ind-card-status.teal  { color: #0c7c99; }
 .market-module .ind-card-status.green { color: var(--green-bar); }
 .market-module .ind-card-status.amber { color: var(--amber); }
 .market-module .ind-card-status.red   { color: var(--red); }
