@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-15T00:33Z",
+  "updated_at": "2026-08-15T02:06Z",
   "mvrv_ratio": {
     "value": 1.2034,
     "normalized_score": 18,
@@ -11,8 +11,8 @@
     "updated_at": "2026-08-15"
   },
   "adr_act": {
-    "ratio": 0.989,
-    "normalized_score": 49,
+    "ratio": 1.004,
+    "normalized_score": 50,
     "updated_at": "2026-08-15"
   },
   "exchange_reserves": {
@@ -27,7 +27,7 @@
     "updated_at": "2026-08-15"
   },
   "funding_rate": {
-    "value": 0.009576,
+    "value": 0.01,
     "trend": "neutral",
     "stale": false,
     "normalized_score": 60,
