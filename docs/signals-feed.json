@@ -1,18 +1,18 @@
 {
-  "updated_at": "2026-08-17T00:33Z",
+  "updated_at": "2026-08-17T02:11Z",
   "mvrv_ratio": {
     "value": 1.1968,
     "normalized_score": 18,
     "updated_at": "2026-08-17"
   },
   "puell_multiple": {
-    "value": 0.7542,
-    "normalized_score": 36,
+    "value": 0.8361,
+    "normalized_score": 40,
     "updated_at": "2026-08-17"
   },
   "adr_act": {
-    "ratio": 0.859,
-    "normalized_score": 39,
+    "ratio": 0.825,
+    "normalized_score": 36,
     "updated_at": "2026-08-17"
   },
   "exchange_reserves": {
