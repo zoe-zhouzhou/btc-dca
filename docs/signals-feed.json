@@ -1,18 +1,18 @@
 {
-  "updated_at": "2026-08-18T00:33Z",
+  "updated_at": "2026-08-18T02:08Z",
   "mvrv_ratio": {
     "value": 1.193,
     "normalized_score": 18,
     "updated_at": "2026-08-18"
   },
   "puell_multiple": {
-    "value": 0.8361,
+    "value": 0.8431,
     "normalized_score": 40,
     "updated_at": "2026-08-18"
   },
   "adr_act": {
-    "ratio": 0.825,
-    "normalized_score": 36,
+    "ratio": 1.035,
+    "normalized_score": 53,
     "updated_at": "2026-08-18"
   },
   "exchange_reserves": {
@@ -27,10 +27,10 @@
     "updated_at": "2026-08-18"
   },
   "funding_rate": {
-    "value": -0.001072,
+    "value": 0.000217,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 49,
+    "normalized_score": 50,
     "updated_at": "2026-08-18"
   },
   "halving_cycle": {
@@ -45,7 +45,7 @@
     "updated_at": "2026-08-18"
   },
   "current_price": 64434.1397083577,
-  "cycle_score": 31,
+  "cycle_score": 33,
   "degraded": false,
   "degraded_reason": null,
   "undervalued_since": "2026-02-10"
