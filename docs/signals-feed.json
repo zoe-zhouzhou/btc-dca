@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-24T02:15Z",
+  "updated_at": "2026-08-24T03:42Z",
   "mvrv_ratio": {
-    "value": 1.4578,
+    "value": 1.4683,
     "normalized_score": 27,
     "updated_at": "2026-08-24"
   },
@@ -16,7 +16,7 @@
     "updated_at": "2026-08-24"
   },
   "exchange_reserves": {
-    "btc_amount": 2714042.92514466,
+    "btc_amount": 2715632.85824512,
     "normalized_score": 35,
     "updated_at": "2026-08-24"
   },
