@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-20T19:09Z",
+  "updated_at": "2026-09-20T21:59Z",
   "mvrv_ratio": {
     "value": 1.5257,
     "normalized_score": 29,
@@ -27,10 +27,10 @@
     "updated_at": "2026-09-20"
   },
   "funding_rate": {
-    "value": 0.008523,
+    "value": 0.009769,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 59,
+    "normalized_score": 60,
     "updated_at": "2026-09-20"
   },
   "halving_cycle": {
