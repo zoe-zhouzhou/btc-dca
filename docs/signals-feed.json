@@ -1,13 +1,13 @@
 {
-  "updated_at": "2026-09-21T02:06Z",
+  "updated_at": "2026-09-21T08:18Z",
   "mvrv_ratio": {
-    "value": 1.5257,
+    "value": 1.5242,
     "normalized_score": 29,
     "updated_at": "2026-09-21"
   },
   "puell_multiple": {
-    "value": 0.8931,
-    "normalized_score": 42,
+    "value": 1.0834,
+    "normalized_score": 50,
     "updated_at": "2026-09-21"
   },
   "adr_act": {
@@ -16,7 +16,7 @@
     "updated_at": "2026-09-21"
   },
   "exchange_reserves": {
-    "btc_amount": 2718047.40416887,
+    "btc_amount": 2721135.94115925,
     "normalized_score": 34,
     "updated_at": "2026-09-21"
   },
@@ -45,7 +45,7 @@
     "updated_at": "2026-09-21"
   },
   "current_price": 81194.7440397662,
-  "cycle_score": 41,
+  "cycle_score": 42,
   "degraded": false,
   "degraded_reason": null,
   "undervalued_since": "2026-02-10"
