@@ -1,8 +1,8 @@
 {
-  "updated_at": "2026-09-22T02:12Z",
+  "updated_at": "2026-09-22T08:00Z",
   "mvrv_ratio": {
-    "value": 1.5242,
-    "normalized_score": 29,
+    "value": 1.621,
+    "normalized_score": 33,
     "updated_at": "2026-09-22"
   },
   "puell_multiple": {
@@ -45,7 +45,7 @@
     "updated_at": "2026-09-22"
   },
   "current_price": 86505.297748235,
-  "cycle_score": 46,
+  "cycle_score": 47,
   "degraded": false,
   "degraded_reason": null,
   "undervalued_since": null
