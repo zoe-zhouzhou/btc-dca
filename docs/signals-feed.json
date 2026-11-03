@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-03T02:44Z",
+  "updated_at": "2026-11-03T10:13Z",
   "mvrv_ratio": {
     "value": 1.4199,
     "normalized_score": 26,
@@ -34,7 +34,7 @@
     "updated_at": "2026-11-03"
   },
   "halving_cycle": {
-    "months_since_halving": 30,
+    "months_since_halving": 31,
     "normalized_score": 11,
     "updated_at": "2026-11-03"
   },
