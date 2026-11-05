@@ -1,23 +1,23 @@
 {
-  "updated_at": "2026-11-05T00:09Z",
+  "updated_at": "2026-11-05T07:29Z",
   "mvrv_ratio": {
-    "value": 1.4385,
-    "normalized_score": 26,
+    "value": 1.4902,
+    "normalized_score": 28,
     "updated_at": "2026-11-05"
   },
   "puell_multiple": {
-    "value": 0.9873,
-    "normalized_score": 46,
+    "value": 1.0457,
+    "normalized_score": 48,
     "updated_at": "2026-11-05"
   },
   "adr_act": {
-    "ratio": 1.065,
-    "normalized_score": 55,
+    "ratio": 1.014,
+    "normalized_score": 51,
     "updated_at": "2026-11-05"
   },
   "exchange_reserves": {
-    "btc_amount": 2667085.95670123,
-    "normalized_score": 38,
+    "btc_amount": 2708410.49988464,
+    "normalized_score": 35,
     "updated_at": "2026-11-05"
   },
   "fgi": {
@@ -27,10 +27,10 @@
     "updated_at": "2026-11-05"
   },
   "funding_rate": {
-    "value": 0.007473,
+    "value": 0.01,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 57,
+    "normalized_score": 60,
     "updated_at": "2026-11-05"
   },
   "halving_cycle": {
