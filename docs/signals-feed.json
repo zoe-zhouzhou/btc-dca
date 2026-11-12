@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-12T04:42Z",
+  "updated_at": "2026-11-12T13:24Z",
   "mvrv_ratio": {
     "value": 1.3697,
     "normalized_score": 24,
@@ -27,10 +27,10 @@
     "updated_at": "2026-11-12"
   },
   "funding_rate": {
-    "value": 0.01,
+    "value": 0.007193,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 60,
+    "normalized_score": 57,
     "updated_at": "2026-11-12"
   },
   "halving_cycle": {
@@ -45,7 +45,7 @@
     "updated_at": "2026-11-12"
   },
   "current_price": 73805.5216852425,
-  "cycle_score": 34,
+  "cycle_score": 33,
   "degraded": false,
   "degraded_reason": null,
   "undervalued_since": "2026-10-07"
