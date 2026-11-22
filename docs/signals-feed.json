@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-22T16:51Z",
+  "updated_at": "2026-11-22T22:12Z",
   "mvrv_ratio": {
     "value": 1.1299,
     "normalized_score": 15,
@@ -11,7 +11,7 @@
     "updated_at": "2026-11-22"
   },
   "adr_act": {
-    "ratio": null,
+    "ratio": 1.098,
     "normalized_score": 57,
     "updated_at": "2026-11-22"
   },
@@ -27,10 +27,10 @@
     "updated_at": "2026-11-22"
   },
   "funding_rate": {
-    "value": 0.002018,
+    "value": 0.003197,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 52,
+    "normalized_score": 53,
     "updated_at": "2026-11-22"
   },
   "halving_cycle": {
