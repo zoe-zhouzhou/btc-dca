@@ -1,51 +1,51 @@
 {
-  "updated_at": "2026-11-24T21:39Z",
+  "updated_at": "2026-11-25T04:39Z",
   "mvrv_ratio": {
-    "value": 1.1524,
-    "normalized_score": 16,
-    "updated_at": "2026-11-24"
+    "value": 1.126,
+    "normalized_score": 15,
+    "updated_at": "2026-11-25"
   },
   "puell_multiple": {
-    "value": 0.953,
-    "normalized_score": 45,
-    "updated_at": "2026-11-24"
+    "value": 0.7871,
+    "normalized_score": 37,
+    "updated_at": "2026-11-25"
   },
   "adr_act": {
-    "ratio": 1.08,
-    "normalized_score": 56,
-    "updated_at": "2026-11-24"
+    "ratio": 1.063,
+    "normalized_score": 54,
+    "updated_at": "2026-11-25"
   },
   "exchange_reserves": {
-    "btc_amount": 2708748.5228757,
+    "btc_amount": 2709516.49061371,
     "normalized_score": 35,
-    "updated_at": "2026-11-24"
+    "updated_at": "2026-11-25"
   },
   "fgi": {
-    "value": 11,
+    "value": 13,
     "label": "Extreme Fear",
-    "normalized_score": 11,
-    "updated_at": "2026-11-24"
+    "normalized_score": 13,
+    "updated_at": "2026-11-25"
   },
   "funding_rate": {
-    "value": 0.008686,
+    "value": 0.004313,
     "trend": "neutral",
     "stale": false,
-    "normalized_score": 59,
-    "updated_at": "2026-11-24"
+    "normalized_score": 54,
+    "updated_at": "2026-11-25"
   },
   "halving_cycle": {
     "months_since_halving": 31,
     "normalized_score": 12,
-    "updated_at": "2026-11-24"
+    "updated_at": "2026-11-25"
   },
   "ma_200d": {
-    "multiplier": 0.848,
-    "ma_value": 72225,
-    "normalized_score": 18,
-    "updated_at": "2026-11-24"
+    "multiplier": 0.829,
+    "ma_value": 72123,
+    "normalized_score": 17,
+    "updated_at": "2026-11-25"
   },
-  "current_price": 61253.2168786616,
-  "cycle_score": 29,
+  "current_price": 59790.6555823933,
+  "cycle_score": 27,
   "degraded": false,
   "degraded_reason": null,
   "undervalued_since": "2026-10-07"
